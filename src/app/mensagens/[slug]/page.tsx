@@ -2,13 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 
+import { buildSiteUrl } from "@/app/api/_shared/slug";
 import { getDbPool } from "@/lib/db";
 import { formatPtBrDate } from "@/lib/format";
 import {
-  getPublicSermonBySlug,
   incrementPublicSermonView,
 } from "@/features/sermons/sermon.repository";
 import type { PublishedSermon } from "@/features/sermons/sermon.types";
+import { CopyLinkButton } from "./copy-link-button";
 
 const PLAY_STORE_URL =
   "https://play.google.com/store/search?q=mensagem%20transformadora&c=apps";
@@ -21,20 +22,43 @@ function buildDescription(sermon: PublishedSermon): string {
   return `Mensagem ministrada por ${sermon.preacherName} na ${sermon.churchName}, baseada em ${sermon.mainVerse}.`;
 }
 
+async function getRuntimeBaseUrl(): Promise<string> {
+  const configured = buildSiteUrl();
+  if (configured) return configured;
+
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  if (host) return `${proto}://${host}`;
+
+  return "http://localhost:3000";
+}
+
+async function fetchPublicSermonBySlug(
+  slug: string,
+): Promise<PublishedSermon | null> {
+  const base = await getRuntimeBaseUrl();
+  const url = new URL(`/api/public/sermons/${encodeURIComponent(slug)}`, base);
+
+  const res = await fetch(url, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error("Falha ao buscar mensagem pública.");
+
+  return (await res.json()) as PublishedSermon;
+}
+
 export async function generateMetadata({ params }: SermonPageProps) {
   const { slug } = await params;
-  let sermon: PublishedSermon | null = null;
-  try {
-    sermon = await getPublicSermonBySlug(slug);
-  } catch {
-    return {};
-  }
+  const sermon = await fetchPublicSermonBySlug(slug);
   if (!sermon) return {};
 
   const title = sermon.sermonTitle;
-  const description = buildDescription(sermon);
+  const description =
+    sermon.finalSummary?.trim() ||
+    sermon.introduction?.trim() ||
+    buildDescription(sermon);
   const urlPath = `/mensagens/${sermon.slug}`;
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "");
+  const siteUrl = buildSiteUrl();
   const canonical = siteUrl ? `${siteUrl}${urlPath}` : urlPath;
 
   return {
@@ -46,6 +70,8 @@ export async function generateMetadata({ params }: SermonPageProps) {
       title,
       description,
       url: canonical,
+      locale: "pt_BR",
+      siteName: "Mensagem Transformadora",
     },
     twitter: {
       card: "summary_large_image",
@@ -58,18 +84,16 @@ export async function generateMetadata({ params }: SermonPageProps) {
 export default async function PublicSermonPage({ params }: SermonPageProps) {
   const { slug } = await params;
 
-  let sermon: PublishedSermon | null = null;
-  try {
-    sermon = await getPublicSermonBySlug(slug);
-  } catch {
-    sermon = null;
-  }
+  const sermon = await fetchPublicSermonBySlug(slug);
   if (!sermon) notFound();
 
   const h = await headers();
   const viewerIp = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
   const userAgent = h.get("user-agent");
   const referrer = h.get("referer");
+
+  const siteUrl = buildSiteUrl() ?? (await getRuntimeBaseUrl());
+  const shareUrl = `${siteUrl.replace(/\/+$/, "")}/mensagens/${sermon.slug}`;
 
   try {
     const pool = getDbPool();
@@ -157,7 +181,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
 
           {sermon.personalObservations ? (
             <section className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
-              <h2 className="text-base font-semibold">Observações</h2>
+              <h2 className="text-base font-semibold">Observações pessoais</h2>
               <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--mt-muted)]">
                 {sermon.personalObservations}
               </p>
@@ -200,6 +224,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
             Copie o link e compartilhe esta mensagem.
           </p>
           <div className="flex flex-col gap-3">
+            <CopyLinkButton url={shareUrl} />
             <Link
               href="/mensagens"
               className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-5 text-sm font-semibold text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
