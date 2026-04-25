@@ -134,6 +134,55 @@ Erros comuns:
 
 ---
 
+### 1b) Publicar mensagem (integração Android sem login)
+
+`POST /api/integrations/android/sermons`
+
+Requer autenticação: **não (sem Supabase Auth)**  
+Proteção: **sim (token fixo de integração)**
+
+Headers obrigatórios:
+
+```http
+Content-Type: application/json
+x-app-publish-token: <ANDROID_PUBLISH_TOKEN>
+```
+
+Observações:
+- Esta rota é destinada ao app Android offline-first, que não possui login de usuário.
+- O backend valida o header `x-app-publish-token` comparando com `ANDROID_PUBLISH_TOKEN`.
+- Como não há usuário autenticado, o backend salva com `user_id = ANDROID_DEFAULT_USER_ID` (UUID de um usuário existente no Supabase Auth).
+- A URL retornada usa `NEXT_PUBLIC_SITE_URL` (se existir) e faz fallback para `https://mensagem-transformadora-web.vercel.app`.
+
+Resposta (sucesso):
+
+```json
+{
+  "id": "uuid",
+  "slug": "o-poder-da-fe",
+  "url": "https://mensagem-transformadora-web.vercel.app/mensagens/o-poder-da-fe"
+}
+```
+
+Resposta (token ausente/inválido):
+
+```json
+{
+  "error": "Token de publicação inválido."
+}
+```
+
+Resposta (payload inválido):
+
+```json
+{
+  "error": "Payload inválido.",
+  "details": ["Campo sermonTitle é obrigatório."]
+}
+```
+
+---
+
 ### 2) Atualizar mensagem publicada
 
 `PUT /api/sermons/:id`
