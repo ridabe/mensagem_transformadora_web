@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  --mt-navy: #0b214a;
+  --mt-amber: #d0901c;
+  --mt-surface: #ffffff;
+  --mt-text: #0b1220;
+  --mt-muted: #4b5563;
+  --mt-border: #e5e7eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --mt-surface: #05070f;
+    --mt-text: #e5e7eb;
+    --mt-muted: #9ca3af;
+    --mt-border: #111827;
+  }
+}
+
+body {
+  background: var(--mt-surface);
+  color: var(--mt-text);
+}
