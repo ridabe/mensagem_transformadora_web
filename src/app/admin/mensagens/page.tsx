@@ -15,15 +15,25 @@ type AdminSermonRow = {
 };
 
 export default async function AdminSermonsPage() {
-  const supabase = await createClient();
-  if (!supabase) redirect("/admin/login?error=config");
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  try {
+    supabase = await createClient();
+  } catch (err) {
+    const message =
+      err && typeof err === "object" && "message" in err && typeof err.message === "string"
+        ? err.message
+        : "Supabase não está configurado no ambiente.";
+    return (
+      <main className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
+        <h2 className="text-lg font-semibold tracking-tight">Configuração</h2>
+        <p className="mt-2 text-sm text-[var(--mt-muted)]">{message}</p>
+      </main>
+    );
+  }
 
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const claims = claimsData?.claims ?? null;
-  const claimsRecord =
-    claims && typeof claims === "object" ? (claims as Record<string, unknown>) : null;
-  const userId = typeof claimsRecord?.sub === "string" ? claimsRecord.sub : null;
-  if (!userId) redirect("/admin/login");
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id ?? null;
+  if (!userId) redirect("/admin/login?error=invalid");
 
   const { data, error } = await supabase
     .from("published_sermons")
@@ -32,7 +42,18 @@ export default async function AdminSermonsPage() {
     .order("sermon_date", { ascending: false })
     .limit(50);
 
-  const rows = !error ? ((data ?? []) as AdminSermonRow[]) : [];
+  if (error) {
+    return (
+      <main className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
+        <h2 className="text-lg font-semibold tracking-tight">Minhas mensagens</h2>
+        <p className="mt-2 text-sm text-[var(--mt-muted)]">
+          Não foi possível carregar suas mensagens.
+        </p>
+      </main>
+    );
+  }
+
+  const rows = (data ?? []) as AdminSermonRow[];
 
   return (
     <main className="flex flex-col gap-6">
@@ -46,7 +67,9 @@ export default async function AdminSermonsPage() {
 
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[var(--mt-border)] bg-[var(--mt-surface)] p-8 text-center">
-          <p className="text-sm font-medium">Nenhuma mensagem encontrada</p>
+          <p className="text-sm font-medium">
+            Você ainda não possui mensagens publicadas.
+          </p>
           <p className="mt-2 text-sm text-[var(--mt-muted)]">
             Assim que você publicar pelo app (ou pelo admin), suas mensagens
             aparecerão aqui.
@@ -86,4 +109,3 @@ export default async function AdminSermonsPage() {
     </main>
   );
 }
-
