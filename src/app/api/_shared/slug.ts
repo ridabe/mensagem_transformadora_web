@@ -10,10 +10,11 @@ function slugify(text: string): string {
 
 export function buildSiteUrl(): string | null {
   const url =
-    process.env.URL_SITE ??
     process.env.NEXT_PUBLIC_SITE_URL ??
-    process.env.NEXT_PUBLIC_VERCEL_URL;
-  if (!url) return null;
+    process.env.URL_SITE ??
+    process.env.VERCEL_URL ??
+    process.env.NEXT_PUBLIC_VERCEL_URL ??
+    "https://mensagem-transformadora-web.vercel.app";
 
   const normalized = url.startsWith("http") ? url : `https://${url}`;
   return normalized.replace(/\/+$/, "");
