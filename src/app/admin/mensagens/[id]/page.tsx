@@ -22,18 +22,30 @@ function parseStatus(value: string): "draft" | "published" | "unpublished" | "ar
   return "published";
 }
 
+function extractMissingEnvFromError(err: unknown): string | null {
+  if (!err || typeof err !== "object") return null;
+  const message = "message" in err && typeof err.message === "string" ? err.message : "";
+  const match = message.match(/Variável de ambiente ausente:\s*(.+)$/);
+  return match?.[1]?.trim() ? match[1].trim() : null;
+}
+
 export async function updateSermonAction(formData: FormData) {
   "use server";
 
-  const supabase = await createClient();
-  if (!supabase) redirect("/admin/login?error=config");
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  try {
+    supabase = await createClient();
+  } catch (err) {
+    const missing = extractMissingEnvFromError(err);
+    const url = missing
+      ? `/admin/login?error=config&missing=${encodeURIComponent(missing)}`
+      : "/admin/login?error=config";
+    redirect(url);
+  }
 
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const claims = claimsData?.claims ?? null;
-  const claimsRecord =
-    claims && typeof claims === "object" ? (claims as Record<string, unknown>) : null;
-  const userId = typeof claimsRecord?.sub === "string" ? claimsRecord.sub : null;
-  if (!userId) redirect("/admin/login");
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id ?? null;
+  if (!userId) redirect("/admin/login?error=invalid");
 
   const id = getString(formData, "id").trim();
   if (!id) redirect("/admin/mensagens");
@@ -66,15 +78,20 @@ export async function updateSermonAction(formData: FormData) {
 export async function deleteSermonAction(formData: FormData) {
   "use server";
 
-  const supabase = await createClient();
-  if (!supabase) redirect("/admin/login?error=config");
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  try {
+    supabase = await createClient();
+  } catch (err) {
+    const missing = extractMissingEnvFromError(err);
+    const url = missing
+      ? `/admin/login?error=config&missing=${encodeURIComponent(missing)}`
+      : "/admin/login?error=config";
+    redirect(url);
+  }
 
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const claims = claimsData?.claims ?? null;
-  const claimsRecord =
-    claims && typeof claims === "object" ? (claims as Record<string, unknown>) : null;
-  const userId = typeof claimsRecord?.sub === "string" ? claimsRecord.sub : null;
-  if (!userId) redirect("/admin/login");
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id ?? null;
+  if (!userId) redirect("/admin/login?error=invalid");
 
   const id = getString(formData, "id").trim();
   if (!id) redirect("/admin/mensagens");
@@ -90,15 +107,25 @@ export async function deleteSermonAction(formData: FormData) {
 }
 
 export default async function AdminSermonEditPage({ params }: AdminSermonEditPageProps) {
-  const supabase = await createClient();
-  if (!supabase) redirect("/admin/login?error=config");
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  try {
+    supabase = await createClient();
+  } catch (err) {
+    const message =
+      err && typeof err === "object" && "message" in err && typeof err.message === "string"
+        ? err.message
+        : "Supabase não está configurado no ambiente.";
+    return (
+      <main className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
+        <h2 className="text-lg font-semibold tracking-tight">Configuração</h2>
+        <p className="mt-2 text-sm text-[var(--mt-muted)]">{message}</p>
+      </main>
+    );
+  }
 
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const claims = claimsData?.claims ?? null;
-  const claimsRecord =
-    claims && typeof claims === "object" ? (claims as Record<string, unknown>) : null;
-  const userId = typeof claimsRecord?.sub === "string" ? claimsRecord.sub : null;
-  if (!userId) redirect("/admin/login");
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id ?? null;
+  if (!userId) redirect("/admin/login?error=invalid");
 
   const { id } = await params;
 

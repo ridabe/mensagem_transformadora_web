@@ -1,13 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import "server-only";
 
-import { getSupabaseEnvOptional } from "@/lib/supabase/env";
+import { getSupabasePublicEnv, getSupabaseServiceEnv } from "@/lib/supabase/env";
 
 export async function createClient() {
   const cookieStore = await cookies();
-  const env = getSupabaseEnvOptional();
-  if (!env) return null;
-  const { url, publishableKey } = env;
+  const { url, publishableKey } = getSupabasePublicEnv();
 
   return createServerClient(url, publishableKey, {
     cookies: {
@@ -22,6 +22,17 @@ export async function createClient() {
         } catch {
         }
       },
+    },
+  });
+}
+
+export function createServiceRoleClient() {
+  const { url, serviceRoleKey } = getSupabaseServiceEnv();
+  return createSupabaseJsClient(url, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      persistSession: false,
     },
   });
 }

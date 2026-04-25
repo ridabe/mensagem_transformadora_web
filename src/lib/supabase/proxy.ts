@@ -1,16 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { getSupabaseEnvOptional } from "@/lib/supabase/env";
+import { getSupabasePublicEnv } from "@/lib/supabase/env";
 
 export async function updateSession(request: NextRequest): Promise<{
   response: NextResponse;
-  claims: unknown | null;
+  userId: string | null;
 }> {
   let supabaseResponse = NextResponse.next({ request });
-  const env = getSupabaseEnvOptional();
-  if (!env) return { response: supabaseResponse, claims: null };
-  const { url, publishableKey } = env;
+  const { url, publishableKey } = getSupabasePublicEnv();
 
   const supabase = createServerClient(url, publishableKey, {
     cookies: {
@@ -27,8 +25,8 @@ export async function updateSession(request: NextRequest): Promise<{
     },
   });
 
-  const { data } = await supabase.auth.getClaims();
-  const claims = data?.claims ?? null;
+  const { data } = await supabase.auth.getUser();
+  const userId = data.user?.id ?? null;
 
-  return { response: supabaseResponse, claims };
+  return { response: supabaseResponse, userId };
 }

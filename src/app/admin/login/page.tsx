@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { login } from "./actions";
+import { SubmitButton } from "./submit-button";
 
 type AdminLoginPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -19,12 +20,15 @@ function getString(
 export default async function AdminLoginPage({ searchParams }: AdminLoginPageProps) {
   const sp = searchParams ? await searchParams : undefined;
   const error = getString(sp, "error");
+  const missing = getString(sp, "missing");
 
   const errorMessage =
     error === "invalid"
-      ? "E-mail ou senha inválidos."
+      ? "E-mail ou senha inválidos. Verifique os dados e tente novamente."
       : error === "config"
-        ? "Supabase não está configurado no ambiente."
+        ? `Supabase não está configurado no ambiente.${
+            missing ? ` Variável ausente: ${missing}.` : ""
+          }`
         : null;
 
   return (
@@ -69,12 +73,7 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
           />
         </label>
 
-        <button
-          type="submit"
-          className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--mt-navy)] px-5 text-sm font-semibold text-white hover:opacity-95"
-        >
-          Entrar
-        </button>
+        <SubmitButton />
       </form>
 
       <p className="text-sm text-[var(--mt-muted)]">
@@ -85,4 +84,3 @@ export default async function AdminLoginPage({ searchParams }: AdminLoginPagePro
     </main>
   );
 }
-
