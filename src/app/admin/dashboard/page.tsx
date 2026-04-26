@@ -59,9 +59,9 @@ export default async function AdminDashboardPage() {
         .eq("visibility", "private"),
     ]);
 
-  const { data: viewsAgg, error: viewsError } = await service
+  const { data: viewsRows, error: viewsError } = await service
     .from("published_sermons")
-    .select("total:views_count.sum()");
+    .select("views_count");
 
   const { data: recentData, error: recentError } = await service
     .from("published_sermons")
@@ -80,8 +80,13 @@ export default async function AdminDashboardPage() {
     );
   }
 
-  const viewsTotalRaw = (viewsAgg?.[0] as unknown as { total?: unknown } | undefined)?.total;
-  const totalViews = typeof viewsTotalRaw === "number" ? viewsTotalRaw : 0;
+  const totalViews = (viewsRows ?? []).reduce((acc, row) => {
+    const v =
+      row && typeof row === "object" && "views_count" in row && typeof row.views_count === "number"
+        ? row.views_count
+        : 0;
+    return acc + v;
+  }, 0);
 
   const summary: DashboardSummaryRow = {
     user_id: userId,
