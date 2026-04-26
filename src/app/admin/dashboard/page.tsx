@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { formatPtBrDate } from "@/lib/format";
 
 type DashboardSummaryRow = {
@@ -45,22 +45,31 @@ export default async function AdminDashboardPage() {
   const userId = userData.user?.id ?? null;
   if (!userId) redirect("/admin/login?error=invalid");
 
-  const { data, error } = await supabase
-    .from("sermon_dashboard_summary")
-    .select(
-      "user_id,total_sermons,total_published,total_private,total_unpublished,total_views",
-    )
-    .eq("user_id", userId)
-    .maybeSingle();
+  const service = createServiceRoleClient();
 
-  const { data: recentData, error: recentError } = await supabase
+  const [{ count: publishedCount, error: publishedError }, { count: privateCount, error: privateError }] =
+    await Promise.all([
+      service
+        .from("published_sermons")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "published"),
+      service
+        .from("published_sermons")
+        .select("id", { count: "exact", head: true })
+        .eq("visibility", "private"),
+    ]);
+
+  const { data: viewsAgg, error: viewsError } = await service
+    .from("published_sermons")
+    .select("total:views_count.sum()");
+
+  const { data: recentData, error: recentError } = await service
     .from("published_sermons")
     .select("id,sermon_title,sermon_date,visibility,status,views_count,slug")
-    .eq("user_id", userId)
     .order("updated_at", { ascending: false })
     .limit(5);
 
-  if (error || recentError) {
+  if (publishedError || privateError || viewsError || recentError) {
     return (
       <main className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
         <h2 className="text-lg font-semibold tracking-tight">Dashboard</h2>
@@ -71,13 +80,16 @@ export default async function AdminDashboardPage() {
     );
   }
 
-  const summary: DashboardSummaryRow = (data as DashboardSummaryRow | null) ?? {
+  const viewsTotalRaw = (viewsAgg?.[0] as unknown as { total?: unknown } | undefined)?.total;
+  const totalViews = typeof viewsTotalRaw === "number" ? viewsTotalRaw : 0;
+
+  const summary: DashboardSummaryRow = {
     user_id: userId,
     total_sermons: 0,
-    total_published: 0,
-    total_private: 0,
+    total_published: publishedCount ?? 0,
+    total_private: privateCount ?? 0,
     total_unpublished: 0,
-    total_views: 0,
+    total_views: totalViews,
   };
 
   const cards = [

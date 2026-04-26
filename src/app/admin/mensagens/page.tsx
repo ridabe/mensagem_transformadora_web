@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { formatPtBrDate } from "@/lib/format";
 
 type AdminSermonRow = {
@@ -35,10 +35,10 @@ export default async function AdminSermonsPage() {
   const userId = userData.user?.id ?? null;
   if (!userId) redirect("/admin/login?error=invalid");
 
-  const { data, error } = await supabase
+  const service = createServiceRoleClient();
+  const { data, error } = await service
     .from("published_sermons")
     .select("id,sermon_title,status,visibility,views_count,sermon_date,slug")
-    .eq("user_id", userId)
     .order("sermon_date", { ascending: false })
     .limit(50);
 
@@ -58,10 +58,10 @@ export default async function AdminSermonsPage() {
   return (
     <main className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
-        <p className="text-sm text-[var(--mt-muted)]">Admin • Minhas mensagens</p>
-        <h2 className="text-2xl font-semibold tracking-tight">Minhas mensagens</h2>
+        <p className="text-sm text-[var(--mt-muted)]">Admin • Mensagens</p>
+        <h2 className="text-2xl font-semibold tracking-tight">Mensagens</h2>
         <p className="text-sm leading-6 text-[var(--mt-muted)]">
-          Edite, despublique e copie links de suas publicações.
+          Edite, despublique e copie links das publicações.
         </p>
       </header>
 

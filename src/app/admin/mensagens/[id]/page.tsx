@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 
 type AdminSermonEditPageProps = {
   params: Promise<{ id: string }>;
@@ -65,11 +65,11 @@ export async function updateSermonAction(formData: FormData) {
   if (mainVerse) patch.main_verse = mainVerse;
   patch.final_summary = finalSummaryRaw ? finalSummaryRaw : null;
 
-  const { error } = await supabase
+  const service = createServiceRoleClient();
+  const { error } = await service
     .from("published_sermons")
     .update(patch)
-    .eq("id", id)
-    .eq("user_id", userId);
+    .eq("id", id);
 
   if (error) redirect(`/admin/mensagens/${id}?error=save`);
   redirect(`/admin/mensagens/${id}?saved=1`);
@@ -96,11 +96,11 @@ export async function deleteSermonAction(formData: FormData) {
   const id = getString(formData, "id").trim();
   if (!id) redirect("/admin/mensagens");
 
-  const { error } = await supabase
+  const service = createServiceRoleClient();
+  const { error } = await service
     .from("published_sermons")
     .delete()
-    .eq("id", id)
-    .eq("user_id", userId);
+    .eq("id", id);
 
   if (error) redirect(`/admin/mensagens/${id}?error=delete`);
   redirect("/admin/mensagens?deleted=1");
@@ -129,11 +129,11 @@ export default async function AdminSermonEditPage({ params }: AdminSermonEditPag
 
   const { id } = await params;
 
-  const { data } = await supabase
+  const service = createServiceRoleClient();
+  const { data } = await service
     .from("published_sermons")
     .select("id,sermon_title,main_verse,final_summary,visibility,status,slug")
     .eq("id", id)
-    .eq("user_id", userId)
     .maybeSingle();
 
   if (!data) {
