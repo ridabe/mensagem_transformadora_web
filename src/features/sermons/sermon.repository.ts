@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 
-import { getDbPool } from "@/lib/db";
+import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type { PoolClient } from "pg";
 import type {
@@ -17,7 +17,7 @@ type DbPublicSermonRow = {
   user_name: string;
   preacher_name: string;
   church_name: string;
-  sermon_date: Date;
+  sermon_date: Date | string;
   sermon_time: string | null;
   sermon_title: string;
   slug: string;
@@ -33,10 +33,10 @@ type DbPublicSermonRow = {
   visibility: string;
   status: string;
   source: string;
-  views_count: number;
-  published_at: Date | null;
-  created_at: Date;
-  updated_at: Date;
+  views_count: number | null;
+  published_at: Date | string | null;
+  created_at: Date | string;
+  updated_at: Date | string;
 };
 
 function normalizeStringArray(value: unknown): string[] {
@@ -60,6 +60,16 @@ function normalizeKeyPoints(value: unknown): SermonKeyPoint[] {
     .sort((a, b) => a.order - b.order);
 }
 
+function toIsoDate(value: Date | string): string {
+  if (value instanceof Date) return value.toISOString();
+  return value;
+}
+
+function toYyyyMmDd(value: Date | string): string {
+  const iso = toIsoDate(value);
+  return iso.slice(0, 10);
+}
+
 function mapRowToPublishedSermon(row: DbPublicSermonRow): PublishedSermon {
   return {
     id: row.id,
@@ -68,7 +78,7 @@ function mapRowToPublishedSermon(row: DbPublicSermonRow): PublishedSermon {
     userName: row.user_name,
     preacherName: row.preacher_name,
     churchName: row.church_name,
-    sermonDate: row.sermon_date.toISOString().slice(0, 10),
+    sermonDate: toYyyyMmDd(row.sermon_date),
     sermonTime: row.sermon_time,
     sermonTitle: row.sermon_title,
     slug: row.slug,
@@ -93,35 +103,9 @@ function mapRowToPublishedSermon(row: DbPublicSermonRow): PublishedSermon {
         ? row.source
         : "android_app",
     viewsCount: row.views_count ?? 0,
-    publishedAt: row.published_at ? row.published_at.toISOString() : null,
-    createdAt: row.created_at.toISOString(),
-    updatedAt: row.updated_at.toISOString(),
-  };
-}
-
-function buildPublicSearchWhere(
-  q: string | undefined,
-): { whereSql: string; params: string[] } {
-  const params: string[] = [];
-  if (!q) {
-    return {
-      whereSql: "",
-      params,
-    };
-  }
-
-  params.push(`%${q}%`);
-  const p1 = `$${params.length}`;
-
-  return {
-    whereSql: ` AND (
-      sermon_title ILIKE ${p1}
-      OR preacher_name ILIKE ${p1}
-      OR church_name ILIKE ${p1}
-      OR main_verse ILIKE ${p1}
-      OR coalesce(final_summary, '') ILIKE ${p1}
-    )`,
-    params,
+    publishedAt: row.published_at ? toIsoDate(row.published_at) : null,
+    createdAt: toIsoDate(row.created_at),
+    updatedAt: toIsoDate(row.updated_at),
   };
 }
 
@@ -132,87 +116,13 @@ export async function getPublicSermons(
   const page = Math.max(1, query.page ?? 1);
   const offset = (page - 1) * pageSize;
 
-  const pool = getDbPool();
-
   const q = query.q?.trim() ? query.q.trim() : undefined;
-  const { whereSql, params } = buildPublicSearchWhere(q);
 
-  const baseFilter = `WHERE visibility = 'public' AND status = 'published'`;
-
-  const countSql = `
-    SELECT count(*)::int AS total
-    FROM public.published_sermons
-    ${baseFilter}
-    ${whereSql}
-  `;
-
-  const listSql = `
-    SELECT
-      id,
-      user_id,
-      local_sermon_id,
-      user_name,
-      preacher_name,
-      church_name,
-      sermon_date,
-      sermon_time,
-      sermon_title,
-      slug,
-      main_verse,
-      secondary_verses,
-      introduction,
-      key_points,
-      highlighted_phrases,
-      personal_observations,
-      practical_applications,
-      conclusion,
-      final_summary,
-      visibility,
-      status,
-      source,
-      views_count,
-      published_at,
-      created_at,
-      updated_at
-    FROM public.published_sermons
-    ${baseFilter}
-    ${whereSql}
-    ORDER BY sermon_date DESC, published_at DESC NULLS LAST, created_at DESC
-    LIMIT $${params.length + 1}
-    OFFSET $${params.length + 2}
-  `;
-
-  const countParams = [...params];
-  const listParams = [...params, pageSize, offset];
-
-  const client = await pool.connect();
-  try {
-    const countRes = await client.query<{ total: number }>(countSql, countParams);
-    const total = countRes.rows[0]?.total ?? 0;
-
-    const listRes = await client.query<DbPublicSermonRow>(listSql, listParams);
-    const items = listRes.rows.map(mapRowToPublishedSermon);
-
-    return {
-      items,
-      page,
-      pageSize,
-      total,
-    };
-  } finally {
-    client.release();
-  }
-}
-
-export async function getPublicSermonBySlug(
-  slug: string,
-): Promise<PublishedSermon | null> {
-  const pool = getDbPool();
-  const client = await pool.connect();
-  try {
-    const res = await client.query<DbPublicSermonRow>(
+  const supabase = await createSupabaseServerClient();
+  let queryBuilder = supabase
+    .from("published_sermons")
+    .select(
       `
-      SELECT
         id,
         user_id,
         local_sermon_id,
@@ -239,21 +149,88 @@ export async function getPublicSermonBySlug(
         published_at,
         created_at,
         updated_at
-      FROM public.published_sermons
-      WHERE visibility = 'public'
-        AND status = 'published'
-        AND slug = $1
-      LIMIT 1
       `,
-      [slug],
-    );
+      { count: "exact" },
+    )
+    .eq("visibility", "public")
+    .eq("status", "published");
 
-    const row = res.rows[0];
-    if (!row) return null;
-    return mapRowToPublishedSermon(row);
-  } finally {
-    client.release();
+  if (q) {
+    const pattern = `%${q}%`;
+    queryBuilder = queryBuilder.or(
+      [
+        `sermon_title.ilike.${pattern}`,
+        `preacher_name.ilike.${pattern}`,
+        `church_name.ilike.${pattern}`,
+        `main_verse.ilike.${pattern}`,
+        `final_summary.ilike.${pattern}`,
+      ].join(","),
+    );
   }
+
+  const { data, error, count } = await queryBuilder
+    .order("sermon_date", { ascending: false })
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .range(offset, offset + pageSize - 1);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const rows = (data ?? []) as unknown as DbPublicSermonRow[];
+  return {
+    items: rows.map(mapRowToPublishedSermon),
+    page,
+    pageSize,
+    total: count ?? 0,
+  };
+}
+
+export async function getPublicSermonBySlug(
+  slug: string,
+): Promise<PublishedSermon | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("published_sermons")
+    .select(
+      `
+        id,
+        user_id,
+        local_sermon_id,
+        user_name,
+        preacher_name,
+        church_name,
+        sermon_date,
+        sermon_time,
+        sermon_title,
+        slug,
+        main_verse,
+        secondary_verses,
+        introduction,
+        key_points,
+        highlighted_phrases,
+        personal_observations,
+        practical_applications,
+        conclusion,
+        final_summary,
+        visibility,
+        status,
+        source,
+        views_count,
+        published_at,
+        created_at,
+        updated_at
+      `,
+    )
+    .eq("slug", slug)
+    .eq("visibility", "public")
+    .eq("status", "published")
+    .maybeSingle<DbPublicSermonRow>();
+
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return mapRowToPublishedSermon(data);
 }
 
 export async function incrementPublicSermonView(
