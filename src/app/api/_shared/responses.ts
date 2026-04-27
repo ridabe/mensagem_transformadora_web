@@ -21,3 +21,7 @@ export function errorResponse(status: number, message: string, details?: unknown
   );
 }
 
+export function publicErrorResponse(status: number, message: string): Response {
+  return json({ success: false, message }, status);
+}
+
