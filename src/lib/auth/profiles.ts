@@ -109,8 +109,8 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
 
 export async function requireAdmin(): Promise<CurrentProfile> {
   const profile = await getCurrentProfile();
-  if (!profile) redirect("/login");
-  if (profile.status === "blocked") redirect("/login?error=blocked");
+  if (!profile) redirect("/admin/login");
+  if (profile.status === "blocked") redirect("/admin/login?error=blocked");
   if (profile.role !== "admin") redirect("/lider/sermoes");
   return profile;
 }
