@@ -1,7 +1,6 @@
-import { redirect } from "next/navigation";
-
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { formatPtBrDate } from "@/lib/format";
+import { requireAdmin } from "@/lib/auth/profiles";
 
 type DashboardSummaryRow = {
   user_id: string;
@@ -23,9 +22,8 @@ type RecentSermonRow = {
 };
 
 export default async function AdminDashboardPage() {
-  let supabase: Awaited<ReturnType<typeof createClient>>;
   try {
-    supabase = await createClient();
+    await createClient();
   } catch (err) {
     const message =
       err && typeof err === "object" && "message" in err && typeof err.message === "string"
@@ -41,9 +39,8 @@ export default async function AdminDashboardPage() {
     );
   }
 
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id ?? null;
-  if (!userId) redirect("/admin/login?error=invalid");
+  const profile = await requireAdmin();
+  const userId = profile.authUserId;
 
   const service = createServiceRoleClient();
 

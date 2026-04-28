@@ -6,6 +6,7 @@ import { getSupabasePublicEnv } from "@/lib/supabase/env";
 export async function updateSession(request: NextRequest): Promise<{
   response: NextResponse;
   userId: string | null;
+  profile: { role: string; status: string } | null;
 }> {
   let supabaseResponse = NextResponse.next({ request });
   const { url, publishableKey } = getSupabasePublicEnv();
@@ -28,5 +29,34 @@ export async function updateSession(request: NextRequest): Promise<{
   const { data } = await supabase.auth.getUser();
   const userId = data.user?.id ?? null;
 
-  return { response: supabaseResponse, userId };
+  let profile: { role: string; status: string } | null = null;
+  if (userId) {
+    const byAuthUserId = await supabase
+      .from("profiles")
+      .select("role,status")
+      .eq("auth_user_id", userId)
+      .maybeSingle();
+
+    if (byAuthUserId.data?.role && byAuthUserId.data?.status) {
+      profile = {
+        role: String(byAuthUserId.data.role),
+        status: String(byAuthUserId.data.status),
+      };
+    } else {
+      const byId = await supabase
+        .from("profiles")
+        .select("role,status")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (byId.data?.role && byId.data?.status) {
+        profile = {
+          role: String(byId.data.role),
+          status: String(byId.data.status),
+        };
+      }
+    }
+  }
+
+  return { response: supabaseResponse, userId, profile };
 }
