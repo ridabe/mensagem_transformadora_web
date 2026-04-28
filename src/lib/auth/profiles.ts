@@ -56,6 +56,8 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
   const user = data.user;
   if (!user?.id) return null;
 
+  const bootstrapAdminId = process.env.MT_BOOTSTRAP_ADMIN_AUTH_USER_ID?.trim() || null;
+
   const existing = await getProfileRow(user.id);
   const row = existing.data;
 
@@ -63,7 +65,6 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
     if (!user.email) return null;
 
     const service = createServiceRoleClient();
-    const bootstrapAdminId = process.env.MT_BOOTSTRAP_ADMIN_AUTH_USER_ID?.trim() || null;
     const role: ProfileRole =
       bootstrapAdminId && bootstrapAdminId === user.id ? "admin" : "leader";
     const created = await service
@@ -92,9 +93,20 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
     };
   }
 
-  const role = normalizeRole(row.role);
+  let role = normalizeRole(row.role);
   const status = normalizeStatus(row.status);
-  if (!role || !status) return null;
+  if (!status) return null;
+
+  if (bootstrapAdminId && bootstrapAdminId === user.id && role !== "admin") {
+    const service = createServiceRoleClient();
+    await service
+      .from("profiles")
+      .update({ role: "admin" })
+      .eq("id", row.id);
+    role = "admin";
+  }
+
+  if (!role) return null;
 
   return {
     id: String(row.id),
