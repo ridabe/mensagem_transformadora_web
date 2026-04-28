@@ -1,17 +1,19 @@
 import { requireLeader } from "@/lib/auth/profiles";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function LiderSermoesPage() {
   const profile = await requireLeader();
 
+  const supabase = await createClient();
+  const churchId = profile.churchId;
+
   let churchLabel: string | null = null;
-  if (profile.churchId) {
+  if (churchId) {
     try {
-      const service = createServiceRoleClient();
-      const { data } = await service
+      const { data } = await supabase
         .from("churches")
         .select("name,status")
-        .eq("id", profile.churchId)
+        .eq("id", churchId)
         .maybeSingle();
       const name = data && typeof data.name === "string" ? data.name : null;
       const status = data && typeof data.status === "string" ? data.status : null;

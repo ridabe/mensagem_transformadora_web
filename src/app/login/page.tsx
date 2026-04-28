@@ -31,10 +31,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const error = getString(sp, "error");
   const missing = getString(sp, "missing");
   const info = getString(sp, "info");
+  const reason = getString(sp, "reason");
 
   const errorMessage =
     error === "invalid"
-      ? "E-mail ou senha inválidos. Verifique os dados e tente novamente."
+      ? `E-mail ou senha inválidos. Verifique os dados e tente novamente.${reason ? ` Motivo: ${reason}` : ""}`
+      : error === "confirm"
+        ? `Seu e-mail ainda não foi confirmado.${reason ? ` Motivo: ${reason}` : ""} Verifique sua caixa de entrada.`
       : error === "blocked"
         ? "Seu acesso está bloqueado. Entre em contato com o suporte."
         : error === "profile"
@@ -48,6 +51,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const infoMessage =
     info === "created"
       ? "Conta criada. Faça login para acessar a área do líder."
+      : info === "confirm"
+        ? "Conta criada. Verifique seu e-mail para confirmar o cadastro antes de fazer login."
       : null;
 
   return (

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { signup } from "./actions";
 
 import { SubmitButton } from "@/app/admin/login/submit-button";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 type SignupPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -23,12 +23,13 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
   const sp = searchParams ? await searchParams : undefined;
   const error = getString(sp, "error");
   const missing = getString(sp, "missing");
+  const reason = getString(sp, "reason");
 
   let churches: { id: string; name: string; city: string | null; state: string | null }[] = [];
   let churchesError: string | null = null;
   try {
-    const service = createServiceRoleClient();
-    const { data, error: loadError } = await service
+    const supabase = await createClient();
+    const { data, error: loadError } = await supabase
       .from("churches")
       .select("id,name,city,state")
       .eq("status", "active")
@@ -53,7 +54,11 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
           : error === "church"
             ? "Selecione uma igreja válida."
           : error === "signup"
-            ? "Não foi possível criar sua conta. Verifique os dados e tente novamente."
+            ? `Não foi possível criar sua conta.${reason ? ` Motivo: ${reason}` : " Verifique os dados e tente novamente."}`
+            : error === "profile"
+              ? `Sua conta foi criada, mas não foi possível salvar seu perfil.${reason ? ` Motivo: ${reason}` : ""}`
+              : error === "subscription"
+                ? `Sua conta foi criada, mas não foi possível criar sua assinatura gratuita.${reason ? ` Motivo: ${reason}` : ""}`
             : error === "config"
               ? `Supabase não está configurado no ambiente.${
                   missing ? ` Variável ausente: ${missing}.` : ""
