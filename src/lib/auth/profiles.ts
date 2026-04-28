@@ -32,22 +32,10 @@ function getDisplayName(user: { email?: string | null; user_metadata?: Record<st
   return (raw?.trim() || fromEmail?.trim() || "Usuário").trim();
 }
 
-async function getProfileRow(authUserId: string) {
-  const service = createServiceRoleClient();
-
-  const byAuthUserId = await service
-    .from("profiles")
-    .select("id,auth_user_id,name,email,role,status,church_id")
-    .eq("auth_user_id", authUserId)
-    .maybeSingle();
-
-  if (byAuthUserId.data?.id) return byAuthUserId;
-
-  return service
-    .from("profiles")
-    .select("id,auth_user_id,name,email,role,status,church_id")
-    .eq("id", authUserId)
-    .maybeSingle();
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }
 
 export async function getCurrentProfile(): Promise<CurrentProfile | null> {
@@ -58,23 +46,43 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
 
   const bootstrapAdminId = process.env.MT_BOOTSTRAP_ADMIN_AUTH_USER_ID?.trim() || null;
 
-  const existing = await getProfileRow(user.id);
-  const row = existing.data;
+  const byAuthUserId = await supabase
+    .from("profiles")
+    .select("id,auth_user_id,name,email,role,status,church_id")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+
+  const row = byAuthUserId.data;
 
   if (!row?.id) {
     if (!user.email) return null;
 
-    const service = createServiceRoleClient();
-    const role: ProfileRole =
-      bootstrapAdminId && bootstrapAdminId === user.id ? "admin" : "leader";
-    const created = await service
+    const churchIdCandidate =
+      user.user_metadata && typeof user.user_metadata.church_id === "string"
+        ? user.user_metadata.church_id.trim()
+        : "";
+    const churchId = isUuid(churchIdCandidate) ? churchIdCandidate : null;
+
+    let churchOkId: string | null = null;
+    if (churchId) {
+      const { data: churchRow } = await supabase
+        .from("churches")
+        .select("id")
+        .eq("id", churchId)
+        .eq("status", "active")
+        .maybeSingle();
+      if (churchRow?.id) churchOkId = String(churchRow.id);
+    }
+
+    const created = await supabase
       .from("profiles")
       .insert({
         auth_user_id: user.id,
         name: getDisplayName(user),
         email: user.email,
-        role,
+        role: "leader",
         status: "active",
+        church_id: churchOkId,
       })
       .select("id,auth_user_id,name,email,role,status,church_id")
       .single();
@@ -82,12 +90,28 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
     const createdRow = created.data;
     if (!createdRow?.id) return null;
 
+    await supabase.from("subscriptions").insert({
+      leader_id: user.id,
+      plan: "free",
+      status: "free",
+    });
+
+    let role = normalizeRole(createdRow.role) ?? "leader";
+    if (bootstrapAdminId && bootstrapAdminId === user.id && role !== "admin") {
+      try {
+        const service = createServiceRoleClient();
+        await service.from("profiles").update({ role: "admin" }).eq("auth_user_id", user.id);
+        role = "admin";
+      } catch {
+      }
+    }
+
     return {
       id: String(createdRow.id),
       authUserId: String(createdRow.auth_user_id),
       name: String(createdRow.name),
       email: String(createdRow.email),
-      role: normalizeRole(createdRow.role) ?? "leader",
+      role,
       status: normalizeStatus(createdRow.status) ?? "active",
       churchId: createdRow.church_id ? String(createdRow.church_id) : null,
     };
@@ -98,15 +122,46 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
   if (!status) return null;
 
   if (bootstrapAdminId && bootstrapAdminId === user.id && role !== "admin") {
-    const service = createServiceRoleClient();
-    await service
-      .from("profiles")
-      .update({ role: "admin" })
-      .eq("id", row.id);
-    role = "admin";
+    try {
+      const service = createServiceRoleClient();
+      await service.from("profiles").update({ role: "admin" }).eq("id", row.id);
+      role = "admin";
+    } catch {
+    }
   }
 
   if (!role) return null;
+
+  if (!row.church_id) {
+    const churchIdCandidate =
+      user.user_metadata && typeof user.user_metadata.church_id === "string"
+        ? user.user_metadata.church_id.trim()
+        : "";
+    if (isUuid(churchIdCandidate)) {
+      const { data: churchRow } = await supabase
+        .from("churches")
+        .select("id")
+        .eq("id", churchIdCandidate)
+        .eq("status", "active")
+        .maybeSingle();
+      if (churchRow?.id) {
+        await supabase.from("profiles").update({ church_id: churchIdCandidate }).eq("id", row.id);
+      }
+    }
+  }
+
+  const { data: existingSubscription } = await supabase
+    .from("subscriptions")
+    .select("id")
+    .eq("leader_id", user.id)
+    .maybeSingle();
+  if (!existingSubscription?.id) {
+    await supabase.from("subscriptions").insert({
+      leader_id: user.id,
+      plan: "free",
+      status: "free",
+    });
+  }
 
   return {
     id: String(row.id),

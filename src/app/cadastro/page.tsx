@@ -3,7 +3,7 @@ import Link from "next/link";
 import { signup } from "./actions";
 
 import { SubmitButton } from "@/app/admin/login/submit-button";
-import { createServiceRoleClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 type SignupPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -28,8 +28,8 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
   let churches: { id: string; name: string; city: string | null; state: string | null }[] = [];
   let churchesError: string | null = null;
   try {
-    const service = createServiceRoleClient();
-    const { data, error: loadError } = await service
+    const supabase = await createClient();
+    const { data, error: loadError } = await supabase
       .from("churches")
       .select("id,name,city,state")
       .eq("status", "active")

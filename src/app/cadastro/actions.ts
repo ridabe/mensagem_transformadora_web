@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/profiles";
 
 function extractMissingEnvFromError(err: unknown): string | null {
@@ -51,28 +51,19 @@ export async function signup(formData: FormData) {
   if (password.length < 6) redirect("/cadastro?error=password");
   if (!isUuid(churchId)) redirect("/cadastro?error=church");
 
-  try {
-    const service = createServiceRoleClient();
-    const { data: church } = await service
+  const { data: church } = await supabase
       .from("churches")
       .select("id")
       .eq("id", churchId)
       .eq("status", "active")
       .maybeSingle();
-    if (!church?.id) redirect("/cadastro?error=church");
-  } catch (err) {
-    const missing = extractMissingEnvFromError(err);
-    const url = missing
-      ? `/cadastro?error=config&missing=${encodeURIComponent(missing)}`
-      : "/cadastro?error=config";
-    redirect(url);
-  }
+  if (!church?.id) redirect("/cadastro?error=church");
 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { display_name: name },
+      data: { display_name: name, church_id: churchId },
     },
   });
 
@@ -83,59 +74,48 @@ export async function signup(formData: FormData) {
   }
 
   const userId = data.user?.id ?? null;
-  if (userId) {
-    try {
-      const service = createServiceRoleClient();
-      const profileUpsert = await service.from("profiles").upsert(
-        {
-          auth_user_id: userId,
-          name,
-          email,
-          role: "leader",
-          status: "active",
-          church_id: churchId,
-        },
-        { onConflict: "auth_user_id" },
-      );
-      if (profileUpsert.error) redirectCadastroError("profile", profileUpsert.error.message);
+  if (userId && data.session) {
+    const inserted = await supabase.from("profiles").insert({
+      auth_user_id: userId,
+      name,
+      email,
+      role: "leader",
+      status: "active",
+      church_id: churchId,
+    });
 
-      const profilePatch = await service
+    if (inserted.error) {
+      const patched = await supabase
         .from("profiles")
         .update({ church_id: churchId })
         .eq("auth_user_id", userId);
-      if (profilePatch.error) redirectCadastroError("profile", profilePatch.error.message);
+      if (patched.error) redirectCadastroError("profile", patched.error.message);
+    }
 
-      const { data: profileRow, error: profileReadError } = await service
-        .from("profiles")
-        .select("church_id")
-        .eq("auth_user_id", userId)
-        .maybeSingle();
-      if (profileReadError) redirectCadastroError("profile", profileReadError.message);
-      const persistedChurchId =
-        profileRow && typeof profileRow === "object" && "church_id" in profileRow
-          ? profileRow.church_id
-          : null;
-      if (persistedChurchId !== churchId) {
-        redirectCadastroError("profile", "Não foi possível vincular a igreja ao perfil.");
-      }
+    const { data: profileRow, error: profileReadError } = await supabase
+      .from("profiles")
+      .select("church_id")
+      .eq("auth_user_id", userId)
+      .maybeSingle();
+    if (profileReadError) redirectCadastroError("profile", profileReadError.message);
+    const persistedChurchId =
+      profileRow && typeof profileRow === "object" && "church_id" in profileRow
+        ? profileRow.church_id
+        : null;
+    if (persistedChurchId !== churchId) {
+      redirectCadastroError("profile", "Não foi possível vincular a igreja ao perfil.");
+    }
 
-      const subscriptionUpsert = await service.from("subscriptions").upsert(
-        {
-          leader_id: userId,
-          plan: "free",
-          status: "free",
-        },
-        { onConflict: "leader_id" },
-      );
-      if (subscriptionUpsert.error) {
-        redirectCadastroError("subscription", subscriptionUpsert.error.message);
+    const subscriptionInserted = await supabase.from("subscriptions").insert({
+      leader_id: userId,
+      plan: "free",
+      status: "free",
+    });
+    if (subscriptionInserted.error) {
+      const msg = (subscriptionInserted.error.message || "").trim();
+      if (!msg.toLowerCase().includes("duplicate") && !msg.toLowerCase().includes("unique")) {
+        redirectCadastroError("subscription", subscriptionInserted.error.message);
       }
-    } catch (err) {
-      const missing = extractMissingEnvFromError(err);
-      const url = missing
-        ? `/cadastro?error=config&missing=${encodeURIComponent(missing)}`
-        : "/cadastro?error=config";
-      redirect(url);
     }
   }
 
