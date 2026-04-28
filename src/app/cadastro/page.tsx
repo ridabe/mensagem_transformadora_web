@@ -55,6 +55,10 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
             ? "Selecione uma igreja válida."
           : error === "signup"
             ? `Não foi possível criar sua conta.${reason ? ` Motivo: ${reason}` : " Verifique os dados e tente novamente."}`
+            : error === "profile"
+              ? `Sua conta foi criada, mas não foi possível salvar seu perfil.${reason ? ` Motivo: ${reason}` : ""}`
+              : error === "subscription"
+                ? `Sua conta foi criada, mas não foi possível criar sua assinatura gratuita.${reason ? ` Motivo: ${reason}` : ""}`
             : error === "config"
               ? `Supabase não está configurado no ambiente.${
                   missing ? ` Variável ausente: ${missing}.` : ""

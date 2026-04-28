@@ -17,6 +17,16 @@ function extractMissingEnvFromError(err: unknown): string | null {
   return match?.[1]?.trim() ? match[1].trim() : null;
 }
 
+function isEmailNotConfirmedError(message: string): boolean {
+  const m = message.toLowerCase();
+  return m.includes("email not confirmed") || m.includes("email não confirmado") || m.includes("not confirmed");
+}
+
+function isInvalidCredentialsError(message: string): boolean {
+  const m = message.toLowerCase();
+  return m.includes("invalid login credentials") || m.includes("invalid");
+}
+
 export async function login(formData: FormData) {
   let supabase: Awaited<ReturnType<typeof createClient>>;
   try {
@@ -33,7 +43,16 @@ export async function login(formData: FormData) {
   const password = getString(formData, "password");
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) redirect("/login?error=invalid");
+  if (error) {
+    const msg = (error.message || "").trim();
+    const reason = msg ? msg.slice(0, 200) : "Falha ao autenticar.";
+    const code = isEmailNotConfirmedError(msg)
+      ? "confirm"
+      : isInvalidCredentialsError(msg)
+        ? "invalid"
+        : "invalid";
+    redirect(`/login?error=${code}&reason=${encodeURIComponent(reason)}`);
+  }
 
   let profile;
   try {

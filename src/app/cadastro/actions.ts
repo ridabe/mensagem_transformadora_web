@@ -23,6 +23,13 @@ function isUuid(value: string): boolean {
   );
 }
 
+/** Redireciona para /cadastro com um motivo legível (sem expor detalhes sensíveis). */
+function redirectCadastroError(code: string, reason?: string) {
+  const safe = (reason || "").trim().slice(0, 200);
+  if (safe) redirect(`/cadastro?error=${encodeURIComponent(code)}&reason=${encodeURIComponent(safe)}`);
+  redirect(`/cadastro?error=${encodeURIComponent(code)}`);
+}
+
 export async function signup(formData: FormData) {
   let supabase: Awaited<ReturnType<typeof createClient>>;
   try {
@@ -73,14 +80,14 @@ export async function signup(formData: FormData) {
   if (error) {
     const message = (error.message || "").trim();
     const safe = message ? message.slice(0, 200) : "Falha ao criar usuário no Supabase Auth.";
-    redirect(`/cadastro?error=signup&reason=${encodeURIComponent(safe)}`);
+    redirectCadastroError("signup", safe);
   }
 
   const userId = data.user?.id ?? null;
   if (userId) {
     try {
       const service = createServiceRoleClient();
-      await service.from("profiles").upsert(
+      const profileUpsert = await service.from("profiles").upsert(
         {
           auth_user_id: userId,
           name,
@@ -91,8 +98,15 @@ export async function signup(formData: FormData) {
         },
         { onConflict: "auth_user_id" },
       );
+      if (profileUpsert.error) redirectCadastroError("profile", profileUpsert.error.message);
 
-      await service.from("subscriptions").upsert(
+      const profilePatch = await service
+        .from("profiles")
+        .update({ church_id: churchId })
+        .eq("auth_user_id", userId);
+      if (profilePatch.error) redirectCadastroError("profile", profilePatch.error.message);
+
+      const subscriptionUpsert = await service.from("subscriptions").upsert(
         {
           leader_id: userId,
           plan: "free",
@@ -100,6 +114,9 @@ export async function signup(formData: FormData) {
         },
         { onConflict: "leader_id" },
       );
+      if (subscriptionUpsert.error) {
+        redirectCadastroError("subscription", subscriptionUpsert.error.message);
+      }
     } catch (err) {
       const missing = extractMissingEnvFromError(err);
       const url = missing
@@ -111,7 +128,13 @@ export async function signup(formData: FormData) {
 
   if (!data.session) {
     const signIn = await supabase.auth.signInWithPassword({ email, password });
-    if (signIn.error) redirect("/login?info=created");
+    if (signIn.error) {
+      const msg = (signIn.error.message || "").trim().toLowerCase();
+      if (msg.includes("email not confirmed") || msg.includes("email não confirmado") || msg.includes("not confirmed")) {
+        redirect("/login?info=confirm");
+      }
+      redirect("/login?info=created");
+    }
   }
 
   const profile = await getCurrentProfile().catch(() => null);
