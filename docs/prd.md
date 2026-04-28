@@ -487,10 +487,111 @@ retorno do link público
 compartilhamento direto
 
 
+F9. Área do Líder — Pré-sermões
+Objetivo
+Permitir que líderes criem e gerenciem pré-sermões com um código compartilhável (MT-XXXXX), para uso posterior no app Android.
+Regras
+
+
+requer login do líder
+
+
+cada pré-sermão é visível apenas para o próprio líder (área privada)
+
+
+o sistema gera automaticamente um shareCode no formato MT-XXXXX
+
+
+status possíveis: draft, active, archived
+
+
+o líder pode:
+
+
+criar
+
+
+editar
+
+
+copiar o código
+
+
+arquivar
+
+
+Rotas (Web)
+
+
+`GET /lider/sermoes` — listagem de pré-sermões (privada)
+
+
+`GET /lider/sermoes/novo` — criação (privada)
+
+
+`GET /lider/sermoes/[id]/editar` — edição/arquivamento (privada)
+
+
+`GET /lider/assinatura` — plano/assinatura (privada)
+
+
+F10. API pública — Pré-sermão por código
+Objetivo
+Permitir que o app Android baixe um pré-sermão a partir do código compartilhável.
+Rota
+Exemplo:
+`GET /api/pre-sermons/by-code?code=MT-K8F3Q`
+Regras
+
+
+rota pública
+
+
+sem login
+
+
+retornar apenas se status = active
+
+
+não retornar dados sensíveis (IDs internos e chaves)
+
+
+Resposta (200)
+
+
+{ 
+  "success": true, 
+  "sermon": { 
+    "shareCode": "MT-K8F3Q", 
+    "title": "...", 
+    "mainVerse": "...", 
+    "secondaryVerses": [], 
+    "notes": "...", 
+    "leader": { 
+      "name": "..." 
+    }, 
+    "church": { 
+      "name": "..." 
+    } 
+  } 
+}
+
+
+Respostas de erro
+
+
+400 — parâmetro `code` ausente ou inválido
+
+
+404 — não encontrado (inclui casos em que existe, mas não está active)
+
+
+500 — falha ao consultar
+
+
 
 9. Entidade Principal
 Published Sermon
-type PublishedSermon = {  id: string  localSermonId: string  userId: string  userName: string  preacherName: string  churchName: string  sermonDate: string  sermonTime?: string  sermonTitle: string  slug: string  mainVerse: string  secondaryVerses: string[]  introduction?: string  keyPoints: SermonPoint[]  highlightedPhrases: string[]  personalObservations?: string  practicalApplications?: string  conclusion?: string  finalSummary?: string  visibility: "public" | "private" | "draft"  publishStatus: "published" | "updated" | "unpublished"  viewsCount: number  publishedAt: string  updatedAt: string}
 
 10. Regras Técnicas
 
