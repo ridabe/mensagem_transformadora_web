@@ -4,14 +4,27 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 export default async function LiderSermoesPage() {
   const profile = await requireLeader();
 
+  let churchId: string | null = profile.churchId;
+  try {
+    const service = createServiceRoleClient();
+    const { data } = await service
+      .from("profiles")
+      .select("church_id")
+      .eq("auth_user_id", profile.authUserId)
+      .maybeSingle();
+    const fromDb = data && typeof data === "object" && "church_id" in data ? data.church_id : null;
+    if (typeof fromDb === "string" && fromDb.trim()) churchId = fromDb;
+  } catch {
+  }
+
   let churchLabel: string | null = null;
-  if (profile.churchId) {
+  if (churchId) {
     try {
       const service = createServiceRoleClient();
       const { data } = await service
         .from("churches")
         .select("name,status")
-        .eq("id", profile.churchId)
+        .eq("id", churchId)
         .maybeSingle();
       const name = data && typeof data.name === "string" ? data.name : null;
       const status = data && typeof data.status === "string" ? data.status : null;

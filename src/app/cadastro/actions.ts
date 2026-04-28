@@ -23,7 +23,6 @@ function isUuid(value: string): boolean {
   );
 }
 
-/** Redireciona para /cadastro com um motivo legível (sem expor detalhes sensíveis). */
 function redirectCadastroError(code: string, reason?: string) {
   const safe = (reason || "").trim().slice(0, 200);
   if (safe) redirect(`/cadastro?error=${encodeURIComponent(code)}&reason=${encodeURIComponent(safe)}`);
@@ -105,6 +104,20 @@ export async function signup(formData: FormData) {
         .update({ church_id: churchId })
         .eq("auth_user_id", userId);
       if (profilePatch.error) redirectCadastroError("profile", profilePatch.error.message);
+
+      const { data: profileRow, error: profileReadError } = await service
+        .from("profiles")
+        .select("church_id")
+        .eq("auth_user_id", userId)
+        .maybeSingle();
+      if (profileReadError) redirectCadastroError("profile", profileReadError.message);
+      const persistedChurchId =
+        profileRow && typeof profileRow === "object" && "church_id" in profileRow
+          ? profileRow.church_id
+          : null;
+      if (persistedChurchId !== churchId) {
+        redirectCadastroError("profile", "Não foi possível vincular a igreja ao perfil.");
+      }
 
       const subscriptionUpsert = await service.from("subscriptions").upsert(
         {
