@@ -70,7 +70,11 @@ export async function signup(formData: FormData) {
     },
   });
 
-  if (error) redirect("/cadastro?error=signup");
+  if (error) {
+    const message = (error.message || "").trim();
+    const safe = message ? message.slice(0, 200) : "Falha ao criar usuário no Supabase Auth.";
+    redirect(`/cadastro?error=signup&reason=${encodeURIComponent(safe)}`);
+  }
 
   const userId = data.user?.id ?? null;
   if (userId) {

@@ -23,6 +23,7 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
   const sp = searchParams ? await searchParams : undefined;
   const error = getString(sp, "error");
   const missing = getString(sp, "missing");
+  const reason = getString(sp, "reason");
 
   let churches: { id: string; name: string; city: string | null; state: string | null }[] = [];
   let churchesError: string | null = null;
@@ -53,7 +54,7 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
           : error === "church"
             ? "Selecione uma igreja válida."
           : error === "signup"
-            ? "Não foi possível criar sua conta. Verifique os dados e tente novamente."
+            ? `Não foi possível criar sua conta.${reason ? ` Motivo: ${reason}` : " Verifique os dados e tente novamente."}`
             : error === "config"
               ? `Supabase não está configurado no ambiente.${
                   missing ? ` Variável ausente: ${missing}.` : ""
