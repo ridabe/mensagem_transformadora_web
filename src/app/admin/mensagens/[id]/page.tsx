@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/profiles";
 
 type AdminSermonEditPageProps = {
   params: Promise<{ id: string }>;
@@ -32,20 +33,17 @@ function extractMissingEnvFromError(err: unknown): string | null {
 export async function updateSermonAction(formData: FormData) {
   "use server";
 
-  let supabase: Awaited<ReturnType<typeof createClient>>;
   try {
-    supabase = await createClient();
+    await createClient();
   } catch (err) {
     const missing = extractMissingEnvFromError(err);
     const url = missing
-      ? `/admin/login?error=config&missing=${encodeURIComponent(missing)}`
-      : "/admin/login?error=config";
+      ? `/login?error=config&missing=${encodeURIComponent(missing)}`
+      : "/login?error=config";
     redirect(url);
   }
 
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id ?? null;
-  if (!userId) redirect("/admin/login?error=invalid");
+  await requireAdmin();
 
   const id = getString(formData, "id").trim();
   if (!id) redirect("/admin/mensagens");
@@ -78,20 +76,17 @@ export async function updateSermonAction(formData: FormData) {
 export async function deleteSermonAction(formData: FormData) {
   "use server";
 
-  let supabase: Awaited<ReturnType<typeof createClient>>;
   try {
-    supabase = await createClient();
+    await createClient();
   } catch (err) {
     const missing = extractMissingEnvFromError(err);
     const url = missing
-      ? `/admin/login?error=config&missing=${encodeURIComponent(missing)}`
-      : "/admin/login?error=config";
+      ? `/login?error=config&missing=${encodeURIComponent(missing)}`
+      : "/login?error=config";
     redirect(url);
   }
 
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id ?? null;
-  if (!userId) redirect("/admin/login?error=invalid");
+  await requireAdmin();
 
   const id = getString(formData, "id").trim();
   if (!id) redirect("/admin/mensagens");
@@ -107,9 +102,8 @@ export async function deleteSermonAction(formData: FormData) {
 }
 
 export default async function AdminSermonEditPage({ params }: AdminSermonEditPageProps) {
-  let supabase: Awaited<ReturnType<typeof createClient>>;
   try {
-    supabase = await createClient();
+    await createClient();
   } catch (err) {
     const message =
       err && typeof err === "object" && "message" in err && typeof err.message === "string"
@@ -123,9 +117,7 @@ export default async function AdminSermonEditPage({ params }: AdminSermonEditPag
     );
   }
 
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id ?? null;
-  if (!userId) redirect("/admin/login?error=invalid");
+  await requireAdmin();
 
   const { id } = await params;
 

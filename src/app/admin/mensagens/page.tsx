@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { formatPtBrDate } from "@/lib/format";
+import { requireAdmin } from "@/lib/auth/profiles";
 
 type AdminSermonRow = {
   id: string;
@@ -15,9 +15,8 @@ type AdminSermonRow = {
 };
 
 export default async function AdminSermonsPage() {
-  let supabase: Awaited<ReturnType<typeof createClient>>;
   try {
-    supabase = await createClient();
+    await createClient();
   } catch (err) {
     const message =
       err && typeof err === "object" && "message" in err && typeof err.message === "string"
@@ -30,10 +29,7 @@ export default async function AdminSermonsPage() {
       </main>
     );
   }
-
-  const { data: userData } = await supabase.auth.getUser();
-  const userId = userData.user?.id ?? null;
-  if (!userId) redirect("/admin/login?error=invalid");
+  await requireAdmin();
 
   const service = createServiceRoleClient();
   const { data, error } = await service

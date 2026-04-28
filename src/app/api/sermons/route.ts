@@ -45,8 +45,14 @@ export async function POST(request: Request) {
       const displayName =
         displayNameRaw?.trim() || user.email.split("@")[0] || "Usuário";
       await service.from("profiles").upsert(
-        { id: user.id, display_name: displayName, email: user.email },
-        { onConflict: "id" },
+        {
+          id: user.id,
+          auth_user_id: user.id,
+          name: displayName,
+          email: user.email,
+          role: "leader",
+        },
+        { onConflict: "auth_user_id" },
       );
     } catch {
     }
