@@ -28,6 +28,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               Mensagens
             </Link>
             <Link
+              href="/admin/igrejas"
+              className="font-semibold text-[var(--mt-text)] hover:underline"
+            >
+              Igrejas
+            </Link>
+            <Link
               href="/mensagens"
               className="font-semibold text-[var(--mt-text)] hover:underline"
             >

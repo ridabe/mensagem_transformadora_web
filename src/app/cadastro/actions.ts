@@ -17,6 +17,12 @@ function getString(formData: FormData, key: string): string {
   return typeof v === "string" ? v : "";
 }
 
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
 export async function signup(formData: FormData) {
   let supabase: Awaited<ReturnType<typeof createClient>>;
   try {
@@ -32,10 +38,29 @@ export async function signup(formData: FormData) {
   const name = getString(formData, "name").trim();
   const email = getString(formData, "email").trim();
   const password = getString(formData, "password");
+  const churchId = getString(formData, "church_id").trim();
 
   if (name.length < 3) redirect("/cadastro?error=name");
   if (!email) redirect("/cadastro?error=email");
   if (password.length < 6) redirect("/cadastro?error=password");
+  if (!isUuid(churchId)) redirect("/cadastro?error=church");
+
+  try {
+    const service = createServiceRoleClient();
+    const { data: church } = await service
+      .from("churches")
+      .select("id")
+      .eq("id", churchId)
+      .eq("status", "active")
+      .maybeSingle();
+    if (!church?.id) redirect("/cadastro?error=church");
+  } catch (err) {
+    const missing = extractMissingEnvFromError(err);
+    const url = missing
+      ? `/cadastro?error=config&missing=${encodeURIComponent(missing)}`
+      : "/cadastro?error=config";
+    redirect(url);
+  }
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -58,8 +83,18 @@ export async function signup(formData: FormData) {
           email,
           role: "leader",
           status: "active",
+          church_id: churchId,
         },
         { onConflict: "auth_user_id" },
+      );
+
+      await service.from("subscriptions").upsert(
+        {
+          leader_id: userId,
+          plan: "free",
+          status: "free",
+        },
+        { onConflict: "leader_id" },
       );
     } catch (err) {
       const missing = extractMissingEnvFromError(err);
@@ -70,8 +105,15 @@ export async function signup(formData: FormData) {
     }
   }
 
+  if (!data.session) {
+    const signIn = await supabase.auth.signInWithPassword({ email, password });
+    if (signIn.error) redirect("/login?info=created");
+  }
+
   const profile = await getCurrentProfile().catch(() => null);
-  if (profile?.role === "leader" && profile.status !== "blocked") redirect("/lider/sermoes");
+  if (profile?.role === "leader" && profile.status !== "blocked") {
+    redirect("/lider/sermoes");
+  }
 
   redirect("/login?info=created");
 }
