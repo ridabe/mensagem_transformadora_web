@@ -23,6 +23,14 @@ Princípio central do sistema:
 - `GET /mensagens/[slug]` — Página pública do sermão/mensagem
 - `GET /sobre` — Página institucional
 
+**Área do líder (privada)**
+
+- `GET /lider` — Redireciona para pré-sermões
+- `GET /lider/sermoes` — Listagem de pré-sermões
+- `GET /lider/sermoes/novo` — Criar pré-sermão
+- `GET /lider/sermoes/[id]/editar` — Editar/arquivar pré-sermão
+- `GET /lider/assinatura` — Assinatura/plano
+
 **API (Next.js Route Handlers)**
 
 - `POST /api/sermons` — Publicar mensagem (criar) (requer autenticação)
@@ -31,6 +39,7 @@ Princípio central do sistema:
 - `GET /api/me/sermons` — Listar minhas mensagens (requer autenticação)
 - `GET /api/public/sermons` — Listar mensagens públicas (sem autenticação)
 - `GET /api/public/sermons/:slug` — Obter mensagem pública por slug (sem autenticação)
+- `GET /api/pre-sermons/by-code?code=MT-XXXXX` — Obter pré-sermão ativo por código (sem autenticação)
 
 ## Modelo de dados (resumo)
 

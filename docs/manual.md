@@ -6,10 +6,11 @@ Este manual explica como usar o site público e a área administrativa (Admin), 
 
 ## 1) Visão geral
 
-O Mensagem Transformadora Web tem dois espaços:
+O Mensagem Transformadora Web tem três espaços:
 
 - **Site público**: vitrine de mensagens publicadas (SEO, compartilhamento e leitura).
-- **Admin**: área privada para o dono gerenciar suas publicações (login obrigatório).
+- **Área do líder**: área privada para criação e gestão de pré-sermões (login obrigatório).
+- **Admin**: área privada para gestão administrativa (login obrigatório).
 
 Nada é publicado automaticamente: uma mensagem só aparece no site público quando estiver **Publicada** e com **Visibilidade Pública**.
 
@@ -65,16 +66,78 @@ Página institucional com explicação do propósito da plataforma.
 
 ---
 
-## 3) Admin (com login)
+## 3) Área do líder (com login)
 
-### 3.1 Rotas do Admin
+### 3.1 Rotas da área do líder
+
+- `/login` — login do líder
+- `/lider` — redireciona para a listagem de pré-sermões
+- `/lider/sermoes` — listagem de pré-sermões
+- `/lider/sermoes/novo` — criação de pré-sermão
+- `/lider/sermoes/[id]/editar` — edição e arquivamento
+- `/lider/assinatura` — assinatura/plano
+
+### 3.2 Pré-sermões (o que são)
+
+Pré-sermões são rascunhos estruturados com:
+
+- **Título**
+- **Versículo principal**
+- **Versículos secundários** (opcional)
+- **Notas** (opcional)
+- **Status** (rascunho/ativo/arquivado)
+- **Código compartilhável** no formato `MT-XXXXX` (gerado automaticamente)
+
+Regras práticas:
+
+- Cada pré-sermão é visível apenas para o líder logado.
+- O código `MT-XXXXX` pode ser copiado para compartilhamento e uso no app Android.
+
+### 3.3 Listagem de pré-sermões (`/lider/sermoes`)
+
+O que você encontra:
+
+- Lista de pré-sermões ordenada por atualização.
+- Ação **Novo pré-sermão**.
+- Ação **Copiar código** (shareCode).
+- Ação **Editar** (quando não estiver arquivado).
+- Ação **Arquivar** (quando não estiver arquivado).
+
+### 3.4 Criar pré-sermão (`/lider/sermoes/novo`)
+
+Passo a passo:
+
+1. Abra `/lider/sermoes/novo`.
+2. Preencha **Título** e **Versículo principal**.
+3. (Opcional) Adicione versículos secundários e notas.
+4. Clique em **Salvar**.
+
+Após salvar:
+
+- O sistema gera um código `MT-XXXXX`.
+- Você pode copiar o código diretamente pela listagem.
+
+### 3.5 Editar/arquivar (`/lider/sermoes/[id]/editar`)
+
+Na edição, você pode:
+
+- Atualizar campos do pré-sermão.
+- Alternar status entre **Rascunho** e **Ativo**.
+- Copiar o código `MT-XXXXX`.
+- **Arquivar** (após arquivar, a edição fica bloqueada).
+
+---
+
+## 4) Admin (com login)
+
+### 4.1 Rotas do Admin
 
 - `/admin/login` — login do Admin
 - `/admin/dashboard` — painel com indicadores
 - `/admin/mensagens` — lista das suas mensagens
 - `/admin/mensagens/[id]` — edição de uma publicação específica
 
-### 3.2 Pré-requisitos (variáveis de ambiente)
+### 4.2 Pré-requisitos (variáveis de ambiente)
 
 Para o login do Admin funcionar, configure no ambiente (produção/Vercel ou local):
 
@@ -87,7 +150,7 @@ Sem essas variáveis:
 
 Observação: o site também usa `CONNECTION_STRING` (Postgres) para as páginas públicas e registro de views.
 
-### 3.3 Acessar o Admin (passo a passo)
+### 4.3 Acessar o Admin (passo a passo)
 
 1. Abra `/admin/login`.
 2. Informe e-mail e senha (credenciais do Supabase Auth do projeto).
@@ -98,7 +161,7 @@ Proteção de rota:
 - Rotas `/admin/*` exigem sessão válida.
 - Se você tentar abrir `/admin/dashboard` sem login, será redirecionado para `/admin/login`.
 
-### 3.4 Dashboard (`/admin/dashboard`)
+### 4.4 Dashboard (`/admin/dashboard`)
 
 Mostra indicadores agregados por usuário:
 
@@ -108,7 +171,7 @@ Mostra indicadores agregados por usuário:
 - total despublicadas
 - total de visualizações
 
-### 3.5 Minhas mensagens (`/admin/mensagens`)
+### 4.5 Minhas mensagens (`/admin/mensagens`)
 
 Mostra até 50 mensagens do usuário logado, com:
 
@@ -119,7 +182,7 @@ Mostra até 50 mensagens do usuário logado, com:
 - ação “Abrir público”
 - ação “Editar”
 
-### 3.6 Editar publicação (`/admin/mensagens/[id]`)
+### 4.6 Editar publicação (`/admin/mensagens/[id]`)
 
 Na tela de edição, você pode:
 
@@ -148,13 +211,13 @@ Botões:
 - **Abrir público**: abre a URL pública baseada no `slug`.
 - **Excluir**: remove a publicação.
 
-### 3.7 Sair
+### 4.7 Sair
 
 No topo do Admin existe o botão **Sair**, que encerra a sessão e volta para o login.
 
 ---
 
-## 4) Publicação de mensagens (origem no app)
+## 5) Publicação de mensagens (origem no app)
 
 O fluxo esperado (produto):
 
@@ -173,7 +236,7 @@ Atualmente, o Admin é o lugar para:
 
 ---
 
-## 5) Analytics (Vercel)
+## 6) Analytics (Vercel)
 
 O site inclui o componente de Analytics da Vercel (integração com App Router).
 
@@ -183,16 +246,16 @@ O que isso significa:
 
 ---
 
-## 6) Operação local (desenvolvimento)
+## 7) Operação local (desenvolvimento)
 
-### 6.1 Rodar o projeto
+### 7.1 Rodar o projeto
 
 No diretório do projeto:
 
 - `npm install`
 - `npm run dev`
 
-### 6.2 Banco / MDD (estrutura)
+### 7.2 Banco / MDD (estrutura)
 
 Existe um script para aplicar a modelagem do banco (MDD) no Postgres do Supabase usando `CONNECTION_STRING`:
 
@@ -209,9 +272,9 @@ Esse script é idempotente e cria:
 
 ---
 
-## 7) Solução de problemas (FAQ)
+## 8) Solução de problemas (FAQ)
 
-### 7.1 “Supabase não está configurado no ambiente”
+### 8.1 “Supabase não está configurado no ambiente”
 
 Causa:
 
@@ -221,7 +284,7 @@ Correção:
 
 - configure as variáveis no ambiente (Vercel) ou em um arquivo local equivalente ao seu setup.
 
-### 7.2 Admin redireciona para o login mesmo após autenticar
+### 8.2 Admin redireciona para o login mesmo após autenticar
 
 Possíveis causas:
 
@@ -233,7 +296,7 @@ Correção:
 
 - valide as variáveis de ambiente e teste em uma janela anônima.
 
-### 7.3 Mensagens não aparecem no público
+### 8.3 Mensagens não aparecem no público
 
 Checklist:
 
@@ -241,7 +304,7 @@ Checklist:
 - `status` está **published**?
 - o registro existe no banco `published_sermons`?
 
-### 7.4 Página pública da mensagem “não encontrada”
+### 8.4 Página pública da mensagem “não encontrada”
 
 Checklist:
 
@@ -250,16 +313,25 @@ Checklist:
 
 ---
 
-## 8) Referência rápida de URLs
+## 9) Referência rápida de URLs
 
 - Site:
   - `/`
   - `/mensagens`
   - `/mensagens/[slug]`
   - `/sobre`
+- Área do líder:
+  - `/login`
+  - `/lider`
+  - `/lider/sermoes`
+  - `/lider/sermoes/novo`
+  - `/lider/sermoes/[id]/editar`
+  - `/lider/assinatura`
 - Admin:
   - `/admin/login`
   - `/admin/dashboard`
   - `/admin/mensagens`
   - `/admin/mensagens/[id]`
+- API pública:
+  - `/api/pre-sermons/by-code?code=MT-XXXXX`
 
