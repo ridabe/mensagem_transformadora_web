@@ -38,8 +38,8 @@ export async function updateSermonAction(formData: FormData) {
   } catch (err) {
     const missing = extractMissingEnvFromError(err);
     const url = missing
-      ? `/login?error=config&missing=${encodeURIComponent(missing)}`
-      : "/login?error=config";
+      ? `/admin/login?error=config&missing=${encodeURIComponent(missing)}`
+      : "/admin/login?error=config";
     redirect(url);
   }
 
@@ -81,8 +81,8 @@ export async function deleteSermonAction(formData: FormData) {
   } catch (err) {
     const missing = extractMissingEnvFromError(err);
     const url = missing
-      ? `/login?error=config&missing=${encodeURIComponent(missing)}`
-      : "/login?error=config";
+      ? `/admin/login?error=config&missing=${encodeURIComponent(missing)}`
+      : "/admin/login?error=config";
     redirect(url);
   }
 

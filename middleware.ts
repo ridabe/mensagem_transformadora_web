@@ -14,7 +14,8 @@ export async function middleware(request: NextRequest) {
   const isAdmin = pathname.startsWith("/admin");
   const isLeader = pathname.startsWith("/lider");
   const isLogin = pathname === "/login";
-  const isLegacyAdminLogin = pathname === "/admin/login";
+  const isSignup = pathname === "/cadastro";
+  const isAdminLogin = pathname === "/admin/login";
 
   let response: NextResponse;
   let userId: string | null;
@@ -26,9 +27,9 @@ export async function middleware(request: NextRequest) {
     userId = session.userId;
     profile = session.profile;
   } catch (err) {
-    if ((isAdmin || isLeader) && !isLogin && !isLegacyAdminLogin) {
+    if ((isAdmin || isLeader) && !isLogin && !isSignup && !isAdminLogin) {
       const url = request.nextUrl.clone();
-      url.pathname = "/login";
+      url.pathname = isAdmin ? "/admin/login" : "/login";
       url.searchParams.set("error", "config");
       const missing = extractMissingEnvFromError(err);
       if (missing) url.searchParams.set("missing", missing);
@@ -39,25 +40,50 @@ export async function middleware(request: NextRequest) {
     profile = null;
   }
 
-  if (isLegacyAdminLogin) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
-  }
-
   const isProtected = isAdmin || isLeader;
 
   if (isProtected) {
+    if (isAdminLogin) {
+      if (userId && profile) {
+        const role = profile.role === "admin" || profile.role === "leader" ? profile.role : null;
+        const status =
+          profile.status === "active" || profile.status === "blocked" || profile.status === "pending"
+            ? profile.status
+            : null;
+
+        if (status === "blocked") {
+          const url = request.nextUrl.clone();
+          url.pathname = "/admin/login";
+          url.searchParams.set("error", "blocked");
+          return NextResponse.redirect(url);
+        }
+
+        if (role === "admin") {
+          const url = request.nextUrl.clone();
+          url.pathname = "/admin/dashboard";
+          return NextResponse.redirect(url);
+        }
+
+        if (role === "leader") {
+          const url = request.nextUrl.clone();
+          url.pathname = "/lider/sermoes";
+          return NextResponse.redirect(url);
+        }
+      }
+
+      return response;
+    }
+
     if (!userId) {
       const url = request.nextUrl.clone();
-      url.pathname = "/login";
+      url.pathname = isAdmin ? "/admin/login" : "/login";
       url.searchParams.set("next", pathname);
       return NextResponse.redirect(url);
     }
 
     if (!profile) {
       const url = request.nextUrl.clone();
-      url.pathname = "/login";
+      url.pathname = isAdmin ? "/admin/login" : "/login";
       url.searchParams.set("next", pathname);
       return NextResponse.redirect(url);
     }
@@ -70,7 +96,7 @@ export async function middleware(request: NextRequest) {
 
     if (status === "blocked") {
       const url = request.nextUrl.clone();
-      url.pathname = "/login";
+      url.pathname = isAdmin ? "/admin/login" : "/login";
       url.searchParams.set("error", "blocked");
       return NextResponse.redirect(url);
     }

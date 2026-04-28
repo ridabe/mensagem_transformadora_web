@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 
-import { login } from "./actions";
+import { signup } from "./actions";
 
 import { SubmitButton } from "@/app/admin/login/submit-button";
-import { getCurrentProfile } from "@/lib/auth/profiles";
 
-type LoginPageProps = {
+type SignupPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
@@ -20,51 +18,35 @@ function getString(
   return undefined;
 }
 
-export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const current = await getCurrentProfile().catch(() => null);
-  if (current && current.status !== "blocked") {
-    if (current.role === "admin") redirect("/admin/dashboard");
-    redirect("/lider/sermoes");
-  }
-
+export default async function CadastroPage({ searchParams }: SignupPageProps) {
   const sp = searchParams ? await searchParams : undefined;
   const error = getString(sp, "error");
   const missing = getString(sp, "missing");
-  const info = getString(sp, "info");
 
   const errorMessage =
-    error === "invalid"
-      ? "E-mail ou senha inválidos. Verifique os dados e tente novamente."
-      : error === "blocked"
-        ? "Seu acesso está bloqueado. Entre em contato com o suporte."
-        : error === "profile"
-          ? "Não foi possível carregar seu perfil. Tente novamente."
-          : error === "config"
-            ? `Supabase não está configurado no ambiente.${
-                missing ? ` Variável ausente: ${missing}.` : ""
-              }`
-            : null;
-
-  const infoMessage =
-    info === "created"
-      ? "Conta criada. Faça login para acessar a área do líder."
-      : null;
+    error === "name"
+      ? "Informe seu nome completo (mínimo 3 caracteres)."
+      : error === "email"
+        ? "Informe um e-mail válido."
+        : error === "password"
+          ? "Informe uma senha com pelo menos 6 caracteres."
+          : error === "signup"
+            ? "Não foi possível criar sua conta. Verifique os dados e tente novamente."
+            : error === "config"
+              ? `Supabase não está configurado no ambiente.${
+                  missing ? ` Variável ausente: ${missing}.` : ""
+                }`
+              : null;
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-10">
       <header className="flex flex-col gap-2">
         <p className="text-sm text-[var(--mt-muted)]">Área do líder</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Entrar</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Cadastro</h1>
         <p className="text-sm leading-6 text-[var(--mt-muted)]">
-          Faça login para acessar sua área restrita.
+          Crie sua conta gratuita para acessar a área do líder.
         </p>
       </header>
-
-      {infoMessage ? (
-        <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4 text-sm text-[var(--mt-text)]">
-          {infoMessage}
-        </div>
-      ) : null}
 
       {errorMessage ? (
         <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4 text-sm text-[var(--mt-text)]">
@@ -73,9 +55,21 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       ) : null}
 
       <form
-        action={login}
+        action={signup}
         className="flex flex-col gap-4 rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6"
       >
+        <label className="flex flex-col gap-2 text-sm">
+          <span className="font-semibold">Nome completo</span>
+          <input
+            name="name"
+            type="text"
+            autoComplete="name"
+            required
+            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2"
+            placeholder="Seu nome"
+          />
+        </label>
+
         <label className="flex flex-col gap-2 text-sm">
           <span className="font-semibold">E-mail</span>
           <input
@@ -93,7 +87,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <input
             name="password"
             type="password"
-            autoComplete="current-password"
+            autoComplete="new-password"
             required
             className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2"
             placeholder="••••••••"
@@ -102,8 +96,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
         <div className="mt-2 flex items-center justify-between gap-4">
           <SubmitButton />
-          <Link href="/cadastro" className="text-sm font-semibold text-[var(--mt-text)] hover:underline">
-            Criar conta
+          <Link href="/login" className="text-sm font-semibold text-[var(--mt-text)] hover:underline">
+            Já tenho conta
           </Link>
         </div>
       </form>
@@ -116,3 +110,4 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     </main>
   );
 }
+
