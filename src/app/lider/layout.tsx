@@ -22,6 +22,12 @@ export default function LiderLayout({ children }: { children: ReactNode }) {
               Sermões
             </Link>
             <Link
+              href="/lider/assinatura"
+              className="font-semibold text-[var(--mt-text)] hover:underline"
+            >
+              Assinatura
+            </Link>
+            <Link
               href="/mensagens"
               className="font-semibold text-[var(--mt-text)] hover:underline"
             >
