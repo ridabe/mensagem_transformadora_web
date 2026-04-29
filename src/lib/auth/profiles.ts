@@ -315,7 +315,11 @@ export async function getCurrentSubscription(profileId: string): Promise<Current
       ? planRow.monthly_pre_sermon_limit
       : null;
 
+  const normalizedPlanCode = planCode.trim().toLowerCase();
   if (planCode === "free" && monthlyPreSermonLimit == null) monthlyPreSermonLimit = 10;
+  if ((normalizedPlanCode === "plano_basico" || normalizedPlanCode === "basic") && monthlyPreSermonLimit == null) {
+    monthlyPreSermonLimit = 20;
+  }
 
   return {
     plan: planCode,

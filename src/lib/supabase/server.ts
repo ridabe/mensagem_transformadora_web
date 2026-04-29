@@ -5,11 +5,16 @@ import "server-only";
 
 import { getSupabasePublicEnv, getSupabaseServiceEnv } from "@/lib/supabase/env";
 
+const noStoreFetch: typeof fetch = (input, init) => {
+  return fetch(input, { ...(init ?? {}), cache: "no-store" });
+};
+
 export async function createClient() {
   const cookieStore = await cookies();
   const { url, publishableKey } = getSupabasePublicEnv();
 
   return createServerClient(url, publishableKey, {
+    global: { fetch: noStoreFetch },
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -29,6 +34,7 @@ export async function createClient() {
 export function createServiceRoleClient() {
   const { url, serviceRoleKey } = getSupabaseServiceEnv();
   return createSupabaseJsClient(url, serviceRoleKey, {
+    global: { fetch: noStoreFetch },
     auth: {
       autoRefreshToken: false,
       detectSessionInUrl: false,
