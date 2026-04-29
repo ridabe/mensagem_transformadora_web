@@ -25,6 +25,20 @@ type CreateSubscriptionCheckoutResult = {
   checkoutUrl: string;
 };
 
+class AbacatePayHttpError extends Error {
+  status: number;
+  data: unknown;
+  providerMessage: string | null;
+
+  constructor(input: { status: number; data: unknown; message: string; providerMessage: string | null }) {
+    super(input.message);
+    this.name = "AbacatePayHttpError";
+    this.status = input.status;
+    this.data = input.data;
+    this.providerMessage = input.providerMessage;
+  }
+}
+
 function getRequiredEnv(name: string): string {
   const v = process.env[name];
   if (!v || !v.trim()) throw new Error(`${name} não configurada no ambiente.`);
@@ -64,6 +78,16 @@ function unwrapApiData(payload: unknown): Record<string, unknown> | null {
   if (!root) return null;
   const data = asRecord(root.data);
   return data ?? root;
+}
+
+function getProviderErrorMessage(payload: unknown): string | null {
+  const root = asRecord(payload);
+  if (!root) return null;
+  const direct = getString(root.error);
+  if (direct) return direct;
+  const nested = asRecord(root.data);
+  const nestedMsg = nested ? getString(nested.error) : null;
+  return nestedMsg;
 }
 
 async function fetchAbacatePay(
@@ -118,7 +142,12 @@ export async function createDonationPix(amountInCents: number): Promise<CreateDo
   });
 
   if (!result.ok) {
-    throw new Error(`AbacatePay retornou HTTP ${result.status}`);
+    throw new AbacatePayHttpError({
+      status: result.status,
+      data: result.data,
+      message: `AbacatePay retornou HTTP ${result.status}`,
+      providerMessage: getProviderErrorMessage(result.data),
+    });
   }
 
   const payload = unwrapApiData(result.data);
@@ -147,7 +176,12 @@ export async function checkDonationPixStatus(id: string): Promise<CheckDonationP
   const result = await fetchAbacatePay(`/v2/transparents/check?id=${encoded}`, { method: "GET" });
 
   if (!result.ok) {
-    throw new Error(`AbacatePay retornou HTTP ${result.status}`);
+    throw new AbacatePayHttpError({
+      status: result.status,
+      data: result.data,
+      message: `AbacatePay retornou HTTP ${result.status}`,
+      providerMessage: getProviderErrorMessage(result.data),
+    });
   }
 
   const payload = unwrapApiData(result.data);
@@ -176,39 +210,59 @@ export async function createAbacatePayCustomer(input: {
   const email = input.email?.trim() ? input.email.trim() : "";
   if (!email) throw new Error("E-mail inválido para criação de customer.");
 
-  const result = await fetchAbacatePay("/v2/customers/create", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      data: {
-        email,
-        name: input.name?.trim() ? input.name.trim() : undefined,
-      },
-      metadata: input.metadata ?? undefined,
-    }),
-  });
+  const name = input.name?.trim() ? input.name.trim() : undefined;
+  const metadata = input.metadata ?? undefined;
 
-  if (!result.ok) {
-    throw new Error(`AbacatePay retornou HTTP ${result.status}`);
+  const tryCreate = async (body: unknown) => {
+    const result = await fetchAbacatePay("/v2/customers/create", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!result.ok) {
+      throw new AbacatePayHttpError({
+        status: result.status,
+        data: result.data,
+        message: `AbacatePay retornou HTTP ${result.status}`,
+        providerMessage: getProviderErrorMessage(result.data),
+      });
+    }
+
+    const payload = unwrapApiData(result.data);
+    if (!payload) throw new Error("Resposta inválida da AbacatePay.");
+
+    const id = pickFirstString(payload, ["id", "customerId", "custId"]);
+    if (!id) throw new Error("Resposta incompleta da AbacatePay.");
+
+    return id;
+  };
+
+  let id: string;
+  try {
+    id = await tryCreate({ email, name, metadata });
+  } catch (err) {
+    if (err instanceof AbacatePayHttpError && (err.status === 400 || err.status === 422)) {
+      id = await tryCreate({
+        data: { email, name },
+        metadata,
+      });
+    } else {
+      throw err;
+    }
   }
-
-  const payload = unwrapApiData(result.data);
-  if (!payload) throw new Error("Resposta inválida da AbacatePay.");
-
-  const id = pickFirstString(payload, ["id", "customerId", "custId"]);
-  if (!id) throw new Error("Resposta incompleta da AbacatePay.");
 
   return { id };
 }
 
 export async function createAbacatePaySubscriptionCheckout(payload: {
   items: { id: string; quantity: number }[];
-  customerId: string;
-  methods: string[];
+  customerId?: string;
+  methods?: string[];
   returnUrl: string;
   completionUrl: string;
-  externalId: string;
-  metadata: Record<string, unknown>;
+  externalId?: string;
+  metadata?: Record<string, unknown>;
 }): Promise<CreateSubscriptionCheckoutResult> {
   const result = await fetchAbacatePay("/v2/subscriptions/create", {
     method: "POST",
@@ -217,7 +271,12 @@ export async function createAbacatePaySubscriptionCheckout(payload: {
   });
 
   if (!result.ok) {
-    throw new Error(`AbacatePay retornou HTTP ${result.status}`);
+    throw new AbacatePayHttpError({
+      status: result.status,
+      data: result.data,
+      message: `AbacatePay retornou HTTP ${result.status}`,
+      providerMessage: getProviderErrorMessage(result.data),
+    });
   }
 
   const data = unwrapApiData(result.data);

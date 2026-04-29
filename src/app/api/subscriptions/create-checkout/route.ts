@@ -61,6 +61,13 @@ function parseDbTimestamp(value: string | null): Date | null {
   return Number.isFinite(d.getTime()) ? d : null;
 }
 
+function mapPlanForAbacatePayMetadata(planCode: string): string {
+  const normalized = planCode?.trim() ? planCode.trim().toLowerCase() : "";
+  if (normalized === "plano_basico" || normalized === "basic") return "basic";
+  if (normalized === "plano_pro" || normalized === "pro") return "pro";
+  return planCode;
+}
+
 export async function POST(request: Request) {
   let body: unknown;
   try {
@@ -156,35 +163,48 @@ export async function POST(request: Request) {
       });
       customerId = created.id;
     } catch (err) {
-      console.error("[subscriptions/create-checkout] erro ao criar customer", err);
-      return publicErrorResponse(
-        502,
-        "Não foi possível iniciar sua assinatura agora. Tente novamente.",
-      );
+      const details =
+        err && typeof err === "object" && "name" in err && err.name === "AbacatePayHttpError"
+          ? err
+          : null;
+      console.error("[subscriptions/create-checkout] erro ao criar customer", {
+        message: err && typeof err === "object" && "message" in err ? err.message : String(err),
+        status: details && "status" in details ? (details.status as number) : null,
+        providerMessage: details && "providerMessage" in details ? (details.providerMessage as string | null) : null,
+      });
+      customerId = null;
     }
   }
 
-  const returnUrl = "https://mensagem-transformadora-web.vercel.app/lider/assinatura";
-  const completionUrl = "https://mensagem-transformadora-web.vercel.app/lider/assinatura?checkout=success";
+  const returnUrl = "https://mensagem-transformadora-web.vercel.app/dashboard";
+  const completionUrl = "https://mensagem-transformadora-web.vercel.app/dashboard?payment=success";
 
   let checkout;
   try {
+    const abacateMetadataPlan = mapPlanForAbacatePayMetadata(planRow.code);
     checkout = await createAbacatePaySubscriptionCheckout({
       items: [{ id: productId, quantity: 1 }],
-      customerId,
-      methods: ["CARD"],
+      ...(customerId ? { customerId } : {}),
       returnUrl,
       completionUrl,
-      externalId: profileRow.id,
       metadata: {
-        project: "mensagem-transformadora",
+        plan: abacateMetadataPlan,
+        planCode: planRow.code,
         profileId: profileRow.id,
         churchId: profileRow.church_id,
-        planCode: planRow.code,
+        project: "mensagem-transformadora",
       },
     });
   } catch (err) {
-    console.error("[subscriptions/create-checkout] erro ao criar checkout", err);
+    const details =
+      err && typeof err === "object" && "name" in err && err.name === "AbacatePayHttpError"
+        ? err
+        : null;
+    console.error("[subscriptions/create-checkout] erro ao criar checkout", {
+      message: err && typeof err === "object" && "message" in err ? err.message : String(err),
+      status: details && "status" in details ? (details.status as number) : null,
+      providerMessage: details && "providerMessage" in details ? (details.providerMessage as string | null) : null,
+    });
     return publicErrorResponse(
       502,
       "Não foi possível iniciar sua assinatura agora. Tente novamente.",

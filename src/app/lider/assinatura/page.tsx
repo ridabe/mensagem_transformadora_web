@@ -266,11 +266,14 @@ export default async function LiderAssinaturaPage() {
         <h3 className="text-lg font-semibold tracking-tight">Limites do plano atual</h3>
         <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4">
-            <p className="text-sm text-[var(--mt-muted)]">Pré-sermões por ciclo</p>
+            <p className="text-sm text-[var(--mt-muted)]">Pré-sermões restantes no ciclo</p>
             {effectiveLimit.kind === "unlimited" ? (
               <p className="mt-2 text-sm font-semibold">Ilimitado</p>
             ) : (
-              <p className="mt-2 text-sm font-semibold">{effectiveLimit.limit}</p>
+              <div className="mt-2 flex flex-col gap-1">
+                <p className="text-sm font-semibold">{remaining}</p>
+                <p className="text-xs text-[var(--mt-muted)]">de {effectiveLimit.limit} por ciclo</p>
+              </div>
             )}
           </div>
 
