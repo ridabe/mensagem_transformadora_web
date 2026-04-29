@@ -1,5 +1,6 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth/profiles";
+import { formatPtBrDate } from "@/lib/format";
 
 type ProfileStatus = "active" | "blocked" | "pending";
 
@@ -10,6 +11,7 @@ type LeaderRow = {
   email: string;
   status: ProfileStatus | string;
   church_id: string | null;
+  created_at?: string | null;
   churches?: { name?: string | null } | null;
 };
 
@@ -17,14 +19,15 @@ type SubscriptionRow = {
   leader_id: string;
   plan: string;
   status: string;
+  current_period_start: string | null;
   current_period_end: string | null;
 };
 
-type PreSermonCount = {
-  total: number;
-  active: number;
-  draft: number;
-  archived: number;
+type PlanRow = {
+  code: string;
+  name: string;
+  monthly_pre_sermon_limit: number | null;
+  is_active: boolean;
 };
 
 type AdminLeadersPageProps = {
@@ -46,6 +49,79 @@ function parseProfileStatus(value: string | undefined): ProfileStatus | "all" {
   if (value === "blocked") return "blocked";
   if (value === "pending") return "pending";
   return "all";
+}
+
+/**
+ * Converte timestamp sem timezone (db) em Date UTC de forma consistente.
+ */
+function parseDbTimestamp(value: string | null | undefined): Date | null {
+  const v = typeof value === "string" ? value.trim() : "";
+  if (!v) return null;
+  const normalized = /[zZ]$/.test(v) || /[+-]\d{2}:\d{2}$/.test(v) ? v : `${v}Z`;
+  const d = new Date(normalized);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
+/**
+ * Soma meses preservando UTC (comportamento similar a date + interval '1 month').
+ */
+function addMonthsUTC(date: Date, months: number): Date {
+  const d = new Date(date.getTime());
+  d.setUTCMonth(d.getUTCMonth() + months);
+  return d;
+}
+
+/**
+ * Calcula o ciclo mensal corrente (não-calendário) baseado em uma base (created_at) e "now".
+ * Ajusta para garantir cycle_start <= now.
+ */
+function getCycleWindowFromBase(base: Date, now: Date): { start: Date; end: Date } {
+  let monthsDiff = (now.getUTCFullYear() - base.getUTCFullYear()) * 12 + (now.getUTCMonth() - base.getUTCMonth());
+  if (monthsDiff < 0) monthsDiff = 0;
+
+  let start = addMonthsUTC(base, monthsDiff);
+  if (start.getTime() > now.getTime()) {
+    monthsDiff = Math.max(0, monthsDiff - 1);
+    start = addMonthsUTC(base, monthsDiff);
+  }
+
+  const end = addMonthsUTC(start, 1);
+  return { start, end };
+}
+
+/**
+ * Determina o limite efetivo aplicável no admin (mesmas regras de produto):
+ * - pago active/trialing: ilimitado
+ * - past_due: ilimitado durante tolerância (default 3 dias após current_period_end)
+ * - demais falhas/expirado/cancelado: volta para free
+ */
+function getEffectiveLimit(input: {
+  planCode: string;
+  status: string;
+  planLimit: number | null;
+  currentPeriodEnd: string | null;
+}): { kind: "unlimited" } | { kind: "limited"; limit: number } {
+  const planCode = input.planCode?.trim() ? input.planCode.trim() : "free";
+  const status = (input.status ?? "free").trim().toLowerCase() || "free";
+  const isPaid = planCode !== "free";
+
+  if (isPaid && (status === "active" || status === "trialing")) return { kind: "unlimited" };
+
+  if (status === "past_due") {
+    const end = parseDbTimestamp(input.currentPeriodEnd);
+    const graceDays = Number.parseInt(process.env.MT_PAST_DUE_GRACE_DAYS?.trim() || "", 10);
+    const safeGraceDays = Number.isFinite(graceDays) && graceDays >= 0 ? graceDays : 3;
+    if (end) {
+      const graceEndMs = end.getTime() + safeGraceDays * 24 * 60 * 60 * 1000;
+      if (Date.now() <= graceEndMs) return { kind: "unlimited" };
+    }
+  }
+
+  const freeLimit = 10;
+  if (isPaid) return { kind: "limited", limit: freeLimit };
+
+  const limit = typeof input.planLimit === "number" && input.planLimit >= 0 ? input.planLimit : freeLimit;
+  return { kind: "limited", limit };
 }
 
 export default async function AdminLideresPage({ searchParams }: AdminLeadersPageProps) {
@@ -74,7 +150,7 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
 
   let leadersQuery = service
     .from("profiles")
-    .select("id,auth_user_id,name,email,status,church_id,churches(name)")
+    .select("id,auth_user_id,name,email,status,church_id,created_at,churches(name)")
     .eq("role", "leader")
     .order("name", { ascending: true })
     .limit(250);
@@ -107,7 +183,7 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
   if (authUserIds.length) {
     const { data: subsData } = await service
       .from("subscriptions")
-      .select("leader_id,plan,status,current_period_end")
+      .select("leader_id,plan,status,current_period_start,current_period_end")
       .in("leader_id", authUserIds);
 
     for (const row of (subsData ?? []) as SubscriptionRow[]) {
@@ -115,31 +191,58 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
     }
   }
 
-  const preSermonCountMap = new Map<string, PreSermonCount>();
+  const { data: plansData } = await service
+    .from("plans")
+    .select("code,name,monthly_pre_sermon_limit,is_active")
+    .eq("is_active", true);
+  const plans = (plansData ?? []) as PlanRow[];
+  const planMap = new Map<string, PlanRow>();
+  for (const p of plans) planMap.set(p.code, p);
+
+  const now = new Date();
+  const recentFrom = new Date(now.getTime() - 62 * 24 * 60 * 60 * 1000);
+  const recentFromIso = recentFrom.toISOString();
+
+  const cycleWindowMap = new Map<string, { startMs: number; endMs: number; endLabel: string }>();
+  for (const l of leaders) {
+    const leaderId = typeof l.auth_user_id === "string" ? l.auth_user_id : "";
+    if (!leaderId) continue;
+
+    const sub = subscriptionMap.get(leaderId);
+    const sStart = parseDbTimestamp(sub?.current_period_start ?? null);
+    const sEnd = parseDbTimestamp(sub?.current_period_end ?? null);
+
+    if (sStart && sEnd && sEnd.getTime() > sStart.getTime()) {
+      cycleWindowMap.set(leaderId, { startMs: sStart.getTime(), endMs: sEnd.getTime(), endLabel: formatPtBrDate(sEnd) });
+      continue;
+    }
+
+    const base = parseDbTimestamp(typeof l.created_at === "string" ? l.created_at : null) ?? now;
+    const w = getCycleWindowFromBase(base, now);
+    cycleWindowMap.set(leaderId, { startMs: w.start.getTime(), endMs: w.end.getTime(), endLabel: formatPtBrDate(w.end) });
+  }
+
+  const usageMap = new Map<string, number>();
   if (authUserIds.length) {
     const { data: preRows } = await service
       .from("pre_sermons")
-      .select("leader_id,status")
+      .select("leader_id,created_at")
       .in("leader_id", authUserIds)
+      .gte("created_at", recentFromIso)
       .limit(5000);
 
-    for (const r of (preRows ?? []) as { leader_id?: unknown; status?: unknown }[]) {
+    for (const r of (preRows ?? []) as { leader_id?: unknown; created_at?: unknown }[]) {
       const leaderId = typeof r.leader_id === "string" ? r.leader_id : null;
       if (!leaderId) continue;
-      const status = typeof r.status === "string" ? r.status : "active";
-      const current = preSermonCountMap.get(leaderId) ?? {
-        total: 0,
-        active: 0,
-        draft: 0,
-        archived: 0,
-      };
+      const createdAt = parseDbTimestamp(typeof r.created_at === "string" ? r.created_at : null);
+      if (!createdAt) continue;
 
-      current.total += 1;
-      if (status === "draft") current.draft += 1;
-      else if (status === "archived") current.archived += 1;
-      else current.active += 1;
-
-      preSermonCountMap.set(leaderId, current);
+      const w = cycleWindowMap.get(leaderId);
+      if (!w) continue;
+      const ts = createdAt.getTime();
+      if (ts >= w.startMs && ts < w.endMs) {
+        usageMap.set(leaderId, (usageMap.get(leaderId) ?? 0) + 1);
+      }
     }
   }
 
@@ -233,9 +336,18 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
               const sub = leaderId ? subscriptionMap.get(leaderId) : undefined;
               const plan = sub && typeof sub.plan === "string" ? sub.plan : "free";
               const subStatus = sub && typeof sub.status === "string" ? sub.status : "free";
-              const counts = leaderId
-                ? preSermonCountMap.get(leaderId) ?? { total: 0, active: 0, draft: 0, archived: 0 }
-                : { total: 0, active: 0, draft: 0, archived: 0 };
+              const planInfo = planMap.get(plan) ?? null;
+              const planLabel = planInfo?.name ?? (plan === "free" ? "Gratuito" : plan);
+              const planLimit = planInfo?.monthly_pre_sermon_limit ?? (plan === "free" ? 10 : null);
+              const usedInCycle = leaderId ? usageMap.get(leaderId) ?? 0 : 0;
+              const window = leaderId ? cycleWindowMap.get(leaderId) ?? null : null;
+              const effective = getEffectiveLimit({
+                planCode: plan,
+                status: subStatus,
+                planLimit,
+                currentPeriodEnd: sub?.current_period_end ?? null,
+              });
+              const remaining = effective.kind === "limited" ? Math.max(0, effective.limit - usedInCycle) : null;
 
               const status = typeof l.status === "string" ? l.status : "active";
 
@@ -250,10 +362,13 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
                   </div>
                   <div className="flex flex-wrap items-center gap-3 text-sm">
                     <span className="rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 py-2 font-semibold text-[var(--mt-text)]">
-                      {plan} • {subStatus}
+                      {planLabel} • {subStatus}
                     </span>
                     <span className="rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 py-2 font-semibold text-[var(--mt-text)]">
-                      Pré-sermões: {counts.total}
+                      {effective.kind === "unlimited"
+                        ? "Pré-sermões: ilimitado"
+                        : `Ciclo: ${usedInCycle}/${effective.limit} • restam ${remaining}`}
+                      {window ? ` • renova ${window.endLabel}` : ""}
                     </span>
                   </div>
                 </div>

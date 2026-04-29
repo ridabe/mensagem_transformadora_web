@@ -68,6 +68,17 @@ function getNextRenewalDate(input: {
 }
 
 /**
+ * Formata uma data vinda do banco (timestamp sem timezone) como pt-BR usando UTC.
+ */
+function formatDbDate(dateRaw: string | null): string {
+  if (!dateRaw) return "—";
+  const normalized =
+    /[zZ]$/.test(dateRaw) || /[+-]\d{2}:\d{2}$/.test(dateRaw) ? dateRaw : `${dateRaw}Z`;
+  const d = new Date(normalized);
+  return Number.isFinite(d.getTime()) ? formatPtBrDate(d) : "—";
+}
+
+/**
  * Aplica regras de "limite efetivo" conforme o status do plano:
  * - pago active/trialing: ilimitado
  * - past_due: permite durante tolerância (default 3 dias após current_period_end)
@@ -217,40 +228,65 @@ export default async function LiderAssinaturaPage({ searchParams }: PageProps) {
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4">
-            <p className="text-sm text-[var(--mt-muted)]">Uso no ciclo atual</p>
-            {effectiveLimit.kind === "unlimited" ? (
-              <p className="mt-2 text-sm font-semibold">Pré-sermões ilimitados</p>
-            ) : (
-              <p className="mt-2 text-sm font-semibold">
-                Você utilizou: {used} de {effectiveLimit.limit} pré-sermões neste ciclo
-              </p>
-            )}
-          </div>
-
-          <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4">
-            <p className="text-sm text-[var(--mt-muted)]">Restante no ciclo</p>
-            {effectiveLimit.kind === "unlimited" ? (
-              <p className="mt-2 text-sm font-semibold">Ilimitado</p>
-            ) : (
-              <p className="mt-2 text-sm font-semibold">{remaining}</p>
-            )}
-          </div>
-
+        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4">
             <p className="text-sm text-[var(--mt-muted)]">
               {effectiveLimit.kind === "unlimited" ? "Próxima cobrança" : "Próxima renovação"}
             </p>
             <p className="mt-2 text-sm font-semibold">{nextRenewalLabel}</p>
+            {effectiveLimit.kind === "limited" ? (
+              <p className="mt-2 text-xs text-[var(--mt-muted)]">
+                Após essa data sua contagem volta automaticamente para {effectiveLimit.limit}.
+              </p>
+            ) : null}
+          </div>
+
+          <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4">
+            <p className="text-sm text-[var(--mt-muted)]">Ciclo atual</p>
+            <p className="mt-2 text-sm font-semibold">
+              {formatDbDate(usage.cycle_start)} → {formatDbDate(usage.cycle_end)}
+            </p>
           </div>
         </div>
+      </section>
 
-        {effectiveLimit.kind === "limited" ? (
-          <p className="mt-4 text-sm text-[var(--mt-muted)]">
-            Após essa data sua contagem volta automaticamente para {effectiveLimit.limit}.
-          </p>
-        ) : null}
+      <section className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
+        <h3 className="text-lg font-semibold tracking-tight">Seu consumo</h3>
+        {effectiveLimit.kind === "unlimited" ? (
+          <p className="mt-3 text-sm font-semibold">Pré-sermões ilimitados</p>
+        ) : (
+          <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4">
+              <p className="text-sm text-[var(--mt-muted)]">Usados</p>
+              <p className="mt-2 text-sm font-semibold">
+                {used} de {effectiveLimit.limit}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4">
+              <p className="text-sm text-[var(--mt-muted)]">Restantes</p>
+              <p className="mt-2 text-sm font-semibold">{remaining}</p>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
+        <h3 className="text-lg font-semibold tracking-tight">Limites do plano atual</h3>
+        <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4">
+            <p className="text-sm text-[var(--mt-muted)]">Pré-sermões por ciclo</p>
+            {effectiveLimit.kind === "unlimited" ? (
+              <p className="mt-2 text-sm font-semibold">Ilimitado</p>
+            ) : (
+              <p className="mt-2 text-sm font-semibold">{effectiveLimit.limit}</p>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4">
+            <p className="text-sm text-[var(--mt-muted)]">Renovação automática</p>
+            <p className="mt-2 text-sm font-semibold">{nextRenewalLabel}</p>
+          </div>
+        </div>
       </section>
 
       <section className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
