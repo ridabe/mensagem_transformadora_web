@@ -49,8 +49,8 @@ export async function createPreSermonAction(formData: FormData) {
   }
 
   const profile = await requireLeader();
-  const allowed = await canCreatePreSermon(profile.authUserId);
-  if (!allowed) redirect("/lider/assinatura?error=upgrade");
+  const permission = await canCreatePreSermon(profile.authUserId);
+  if (!permission.allowed) redirect("/lider/sermoes/novo?error=limit");
 
   const title = normalizeOptionalText(getFormString(formData, "title"));
   const mainVerse = normalizeOptionalText(getFormString(formData, "main_verse"));
@@ -122,6 +122,8 @@ export default async function LiderNovoSermoesPage({ searchParams }: LiderNovoSe
       ? "O título é obrigatório."
       : error === "main_verse"
         ? "O versículo principal é obrigatório."
+        : error === "limit"
+          ? "Seu plano gratuito permite até 10 pré-sermões por mês. Seu ciclo será renovado automaticamente na próxima data de renovação ou você pode fazer upgrade agora."
         : error === "create"
           ? "Não foi possível criar o pré-sermão."
           : null;
