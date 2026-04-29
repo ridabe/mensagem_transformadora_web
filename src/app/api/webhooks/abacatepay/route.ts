@@ -99,6 +99,10 @@ function computeAbacateSignatureV1(params: { secret: string; timestamp: string; 
   return crypto.createHmac("sha256", params.secret).update(signedPayload).digest("hex");
 }
 
+function computeAbacateSignatureV1Raw(params: { secret: string; rawBody: string }): string {
+  return crypto.createHmac("sha256", params.secret).update(params.rawBody).digest("hex");
+}
+
 function validateWebhookSecret(request: Request): boolean {
   const expected = getRequiredEnv("ABACATEPAY_WEBHOOK_SECRET");
   if (!expected) return false;
@@ -108,13 +112,18 @@ function validateWebhookSecret(request: Request): boolean {
   return safeEqual(provided, expected);
 }
 
-function validateWebhookHmacIfPresent(request: Request, rawBody: string): boolean {
+function hasWebhookSignatureHeader(request: Request): boolean {
+  const header = request.headers.get("x-abacate-signature");
+  return Boolean(header && header.trim());
+}
+
+function validateWebhookHmac(request: Request, rawBody: string): boolean {
   const secret = getRequiredEnv("ABACATEPAY_WEBHOOK_SECRET");
   if (!secret) return false;
 
   const header = request.headers.get("x-abacate-signature");
 
-  if (!header || !header.trim()) return true;
+  if (!header || !header.trim()) return false;
 
   const parsed = parseAbacateSignatureHeader(header);
   if (!parsed.timestamp || !parsed.v1) return false;
@@ -125,7 +134,18 @@ function validateWebhookHmacIfPresent(request: Request, rawBody: string): boolea
     rawBody,
   });
 
-  return safeEqual(parsed.v1.toLowerCase(), expected.toLowerCase());
+  const expectedRaw = computeAbacateSignatureV1Raw({ secret, rawBody });
+
+  const received = parsed.v1.toLowerCase();
+  if (safeEqual(received, expected.toLowerCase())) return true;
+  if (safeEqual(received, expectedRaw.toLowerCase())) return true;
+  return false;
+}
+
+function isWebhookAuthorized(request: Request, rawBody: string): boolean {
+  if (validateWebhookSecret(request)) return true;
+  if (hasWebhookSignatureHeader(request)) return validateWebhookHmac(request, rawBody);
+  return false;
 }
 
 function extractAbacateData(payload: AbacatePayWebhookPayload): {
@@ -320,8 +340,6 @@ async function ensurePaymentEventRecord(service: ReturnType<typeof createService
 }
 
 export async function POST(request: Request) {
-  if (!validateWebhookSecret(request)) return json({}, { status: 401 });
-
   let rawBody = "";
   try {
     rawBody = await request.text();
@@ -329,7 +347,7 @@ export async function POST(request: Request) {
     return json({}, { status: 400 });
   }
 
-  if (!validateWebhookHmacIfPresent(request, rawBody)) return json({}, { status: 401 });
+  if (!isWebhookAuthorized(request, rawBody)) return json({}, { status: 401 });
 
   let payload: AbacatePayWebhookPayload;
   try {
@@ -376,6 +394,13 @@ export async function POST(request: Request) {
   const now = new Date();
 
   if (!subscription?.id) {
+    console.warn("[webhooks/abacatepay] assinatura local não encontrada", {
+      eventType,
+      providerSubscriptionId: extracted.subscriptionId,
+      providerCheckoutId: extracted.checkoutId,
+      providerCustomerId: extracted.customerId,
+      profileId: extracted.profileId,
+    });
     await markEventProcessed(service, paymentEvent.id);
     return json({ success: true, ignored: true }, 200);
   }

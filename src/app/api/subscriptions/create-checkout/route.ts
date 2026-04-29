@@ -187,6 +187,7 @@ export async function POST(request: Request) {
       ...(customerId ? { customerId } : {}),
       returnUrl,
       completionUrl,
+      externalId: profileRow.id,
       metadata: {
         plan: abacateMetadataPlan,
         planCode: planRow.code,
