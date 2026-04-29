@@ -412,17 +412,27 @@ export async function canCreatePreSermon(profileId: string): Promise<CanCreatePr
   const currentPeriodEnd = parseIsoDate(subscription.current_period_end);
   const pastDueAllowed = status === "past_due" && isPastDueWithinGrace(currentPeriodEnd, now);
 
-  if (paid && (isActiveLikeStatus(status) || pastDueAllowed)) {
+  const freeLimit = 10;
+  const planLimit =
+    typeof subscription.monthly_pre_sermon_limit === "number" && subscription.monthly_pre_sermon_limit >= 0
+      ? subscription.monthly_pre_sermon_limit
+      : null;
+
+  const isActiveOrTrial = isActiveLikeStatus(status);
+  const isPaidAllowed = paid && (isActiveOrTrial || pastDueAllowed);
+
+  const effectiveLimit =
+    isPaidAllowed && planLimit == null
+      ? null
+      : isPaidAllowed && planLimit != null
+        ? planLimit
+        : freeLimit;
+
+  if (effectiveLimit == null) {
     return { allowed: true, subscription, usage };
   }
 
-  const freeLimit = 10;
-  const limit =
-    typeof subscription.monthly_pre_sermon_limit === "number" && subscription.monthly_pre_sermon_limit >= 0
-      ? subscription.monthly_pre_sermon_limit
-      : freeLimit;
-
-  if (limit === 0) {
+  if (effectiveLimit === 0) {
     return {
       allowed: false,
       subscription,
@@ -432,13 +442,13 @@ export async function canCreatePreSermon(profileId: string): Promise<CanCreatePr
     };
   }
 
-  if (usage.used < limit) return { allowed: true, subscription, usage };
+  if (usage.used < effectiveLimit) return { allowed: true, subscription, usage };
 
   return {
     allowed: false,
     subscription,
     usage,
     errorMessage:
-      "Seu plano gratuito permite até 10 pré-sermões por mês. Seu ciclo será renovado automaticamente na próxima data de renovação ou você pode fazer upgrade agora.",
+      `Seu plano permite até ${effectiveLimit} pré-sermões por ciclo mensal. Seu ciclo será renovado automaticamente na próxima data de renovação ou você pode fazer upgrade agora.`,
   };
 }

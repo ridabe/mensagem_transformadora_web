@@ -1,0 +1,241 @@
+import { publicErrorResponse, json } from "@/app/api/_shared/responses";
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
+import {
+  createAbacatePayCustomer,
+  createAbacatePaySubscriptionCheckout,
+  getAbacatePayProductId,
+} from "@/lib/abacatepay";
+
+type CreateCheckoutBody = {
+  planCode?: unknown;
+};
+
+type DbProfileRow = {
+  id: string;
+  auth_user_id: string;
+  role: string;
+  status: string;
+  name: string;
+  email: string;
+  church_id: string | null;
+};
+
+type DbPlanRow = {
+  code: string;
+  is_active: boolean;
+  price_in_cents: number;
+};
+
+type DbSubscriptionRow = {
+  id: string;
+  leader_id: string | null;
+  plan: string;
+  status: string;
+  provider_customer_id: string | null;
+  provider_checkout_id: string | null;
+  provider_subscription_id: string | null;
+  metadata: unknown;
+  updated_at: string | null;
+};
+
+function getString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") return null;
+  return value as Record<string, unknown>;
+}
+
+function getCheckoutUrlFromMetadata(metadata: unknown): string | null {
+  const obj = asRecord(metadata);
+  const url = obj ? getString(obj.checkoutUrl) : null;
+  return url;
+}
+
+function parseDbTimestamp(value: string | null): Date | null {
+  const v = value?.trim() ? value.trim() : "";
+  if (!v) return null;
+  const normalized = /[zZ]$/.test(v) || /[+-]\d{2}:\d{2}$/.test(v) ? v : `${v}Z`;
+  const d = new Date(normalized);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
+export async function POST(request: Request) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return publicErrorResponse(400, "JSON inválido no corpo da requisição.");
+  }
+
+  const planCode = getString((body as CreateCheckoutBody | null)?.planCode) ?? null;
+  if (!planCode) return publicErrorResponse(400, "planCode é obrigatório.");
+  if (planCode === "free") return publicErrorResponse(400, "Plano gratuito não gera checkout.");
+
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch {
+    return publicErrorResponse(500, "Supabase não está configurado no ambiente.");
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  const userId = userData.user?.id ?? null;
+  if (userError || !userId) return publicErrorResponse(401, "Você precisa estar autenticado.");
+
+  const service = createServiceRoleClient();
+  const { data: profileRow } = await service
+    .from("profiles")
+    .select("id,auth_user_id,role,status,name,email,church_id")
+    .eq("auth_user_id", userId)
+    .maybeSingle<DbProfileRow>();
+
+  if (!profileRow?.id) return publicErrorResponse(403, "Perfil não encontrado.");
+  if (String(profileRow.role || "").toLowerCase() !== "leader") {
+    return publicErrorResponse(403, "Apenas líderes podem assinar planos.");
+  }
+  if (String(profileRow.status || "").toLowerCase() === "blocked") {
+    return publicErrorResponse(403, "Sua conta está bloqueada.");
+  }
+
+  const { data: planRow } = await service
+    .from("plans")
+    .select("code,is_active,price_in_cents")
+    .eq("code", planCode)
+    .maybeSingle<DbPlanRow>();
+
+  if (!planRow?.code) return publicErrorResponse(400, "Plano inválido.");
+  if (!planRow.is_active) return publicErrorResponse(400, "Plano indisponível no momento.");
+  if (planRow.code === "free" || planRow.price_in_cents === 0) {
+    return publicErrorResponse(400, "Plano gratuito não gera checkout.");
+  }
+
+  const productId = getAbacatePayProductId(planRow.code);
+  if (!productId) return publicErrorResponse(500, "Produto de assinatura não configurado.");
+
+  const { data: existingSub } = await service
+    .from("subscriptions")
+    .select(
+      "id,leader_id,plan,status,provider_customer_id,provider_checkout_id,provider_subscription_id,metadata,updated_at",
+    )
+    .eq("leader_id", userId)
+    .maybeSingle<DbSubscriptionRow>();
+
+  const now = new Date();
+  const updatedAt = parseDbTimestamp(existingSub?.updated_at ?? null);
+  const pendingReuseWindowMs = 15 * 60 * 1000;
+
+  if (existingSub?.id) {
+    const currentPlan = getString(existingSub.plan) ?? "free";
+    const currentStatus = getString(existingSub.status)?.toLowerCase() ?? "free";
+
+    if ((currentStatus === "active" || currentStatus === "trialing") && currentPlan === planRow.code) {
+      return publicErrorResponse(409, "Você já possui este plano ativo.");
+    }
+
+    if (currentStatus === "pending" && currentPlan === planRow.code && updatedAt) {
+      const age = now.getTime() - updatedAt.getTime();
+      const url = getCheckoutUrlFromMetadata(existingSub.metadata);
+      if (age >= 0 && age <= pendingReuseWindowMs && url) {
+        return json({ success: true, checkoutUrl: url }, 200);
+      }
+    }
+  }
+
+  let customerId = existingSub?.provider_customer_id ?? null;
+  if (!customerId) {
+    try {
+      const created = await createAbacatePayCustomer({
+        email: profileRow.email,
+        name: profileRow.name,
+        metadata: {
+          project: "mensagem-transformadora",
+          profileId: profileRow.id,
+        },
+      });
+      customerId = created.id;
+    } catch (err) {
+      console.error("[subscriptions/create-checkout] erro ao criar customer", err);
+      return publicErrorResponse(
+        502,
+        "Não foi possível iniciar sua assinatura agora. Tente novamente.",
+      );
+    }
+  }
+
+  const returnUrl = "https://mensagem-transformadora-web.vercel.app/lider/assinatura";
+  const completionUrl = "https://mensagem-transformadora-web.vercel.app/lider/assinatura?checkout=success";
+
+  let checkout;
+  try {
+    checkout = await createAbacatePaySubscriptionCheckout({
+      items: [{ id: productId, quantity: 1 }],
+      customerId,
+      methods: ["CARD"],
+      returnUrl,
+      completionUrl,
+      externalId: profileRow.id,
+      metadata: {
+        project: "mensagem-transformadora",
+        profileId: profileRow.id,
+        churchId: profileRow.church_id,
+        planCode: planRow.code,
+      },
+    });
+  } catch (err) {
+    console.error("[subscriptions/create-checkout] erro ao criar checkout", err);
+    return publicErrorResponse(
+      502,
+      "Não foi possível iniciar sua assinatura agora. Tente novamente.",
+    );
+  }
+
+  const metadata = {
+    ...(asRecord(existingSub?.metadata) ?? {}),
+    project: "mensagem-transformadora",
+    planCode: planRow.code,
+    checkoutUrl: checkout.checkoutUrl,
+  };
+
+  const patch = {
+    provider: "abacatepay",
+    provider_customer_id: customerId,
+    provider_product_id: productId,
+    provider_checkout_id: checkout.checkoutId,
+    provider_subscription_id: checkout.subscriptionId,
+    plan: planRow.code,
+    status: "pending",
+    metadata,
+    current_period_start: now.toISOString(),
+  };
+
+  if (existingSub?.id) {
+    const { error: updateError } = await service.from("subscriptions").update(patch).eq("id", existingSub.id);
+    if (updateError) {
+      console.error("[subscriptions/create-checkout] erro ao salvar subscription", updateError);
+      return publicErrorResponse(
+        500,
+        "Não foi possível iniciar sua assinatura agora. Tente novamente.",
+      );
+    }
+  } else {
+    const { error: insertError } = await service.from("subscriptions").insert({
+      leader_id: userId,
+      ...patch,
+    });
+    if (insertError) {
+      console.error("[subscriptions/create-checkout] erro ao inserir subscription", insertError);
+      return publicErrorResponse(
+        500,
+        "Não foi possível iniciar sua assinatura agora. Tente novamente.",
+      );
+    }
+  }
+
+  return json({ success: true, checkoutUrl: checkout.checkoutUrl }, 201);
+}
+
+export async function GET() {
+  return publicErrorResponse(405, "Método não permitido.");
+}

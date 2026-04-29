@@ -1,8 +1,7 @@
-import Link from "next/link";
-
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentSubscription, getCurrentUsage, requireLeader } from "@/lib/auth/profiles";
 import { formatPtBrDate } from "@/lib/format";
+import { CreateCheckoutButton } from "./create-checkout-button";
 
 type PlanRow = {
   code: string;
@@ -14,23 +13,6 @@ type PlanRow = {
   monthly_pre_sermon_limit: number | null;
   is_active: boolean;
 };
-
-type PageProps = {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-};
-
-/**
- * Converte valores possíveis do searchParams em string.
- */
-function getString(
-  sp: Record<string, string | string[] | undefined> | undefined,
-  key: string,
-): string | undefined {
-  const v = sp?.[key];
-  if (typeof v === "string") return v;
-  if (Array.isArray(v)) return v[0];
-  return undefined;
-}
 
 /**
  * Normaliza o status retornado da assinatura para exibição/decisões.
@@ -94,7 +76,15 @@ function getEffectiveLimit(input: {
   const status = normalizeSubscriptionStatus(input.status);
   const isPaid = plan !== "free";
 
-  if (isPaid && (status === "active" || status === "trialing")) return { kind: "unlimited" };
+  const paidLimit =
+    typeof input.monthly_pre_sermon_limit === "number" && input.monthly_pre_sermon_limit >= 0
+      ? input.monthly_pre_sermon_limit
+      : null;
+
+  if (isPaid && (status === "active" || status === "trialing")) {
+    if (paidLimit == null) return { kind: "unlimited" };
+    return { kind: "limited", limit: paidLimit };
+  }
 
   if (status === "past_due") {
     const endDate = input.current_period_end ? new Date(input.current_period_end) : null;
@@ -103,7 +93,11 @@ function getEffectiveLimit(input: {
     const safeGraceDays = Number.isFinite(graceDays) && graceDays >= 0 ? graceDays : 3;
     if (endOk) {
       const graceEndMs = endOk.getTime() + safeGraceDays * 24 * 60 * 60 * 1000;
-      if (Date.now() <= graceEndMs) return { kind: "unlimited" };
+      if (Date.now() <= graceEndMs) {
+        if (isPaid && paidLimit == null) return { kind: "unlimited" };
+        if (isPaid && paidLimit != null) return { kind: "limited", limit: paidLimit };
+        return { kind: "limited", limit: 10 };
+      }
     }
   }
 
@@ -122,6 +116,7 @@ function getEffectiveLimit(input: {
 function getStatusLabel(statusRaw: string): string {
   const status = normalizeSubscriptionStatus(statusRaw);
   if (status === "free") return "Gratuito";
+  if (status === "pending") return "Pendente";
   if (status === "active") return "Ativo";
   if (status === "trialing") return "Em teste";
   if (status === "past_due") return "Pagamento pendente";
@@ -133,10 +128,7 @@ function getStatusLabel(statusRaw: string): string {
   return status;
 }
 
-export default async function LiderAssinaturaPage({ searchParams }: PageProps) {
-  const sp = searchParams ? await searchParams : undefined;
-  const selectedPlan = getString(sp, "plan")?.trim() || null;
-
+export default async function LiderAssinaturaPage() {
   let supabase: Awaited<ReturnType<typeof createClient>>;
   try {
     supabase = await createClient();
@@ -340,18 +332,8 @@ export default async function LiderAssinaturaPage({ searchParams }: PageProps) {
                       Plano atual
                     </button>
                   ) : (
-                    <Link
-                      href={`/lider/assinatura?plan=${encodeURIComponent(p.code)}`}
-                      className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--mt-navy)] px-5 text-sm font-semibold text-white hover:opacity-95"
-                    >
-                      Assinar agora
-                    </Link>
+                    <CreateCheckoutButton planCode={p.code} label={`Assinar ${p.name}`} />
                   )}
-                  {selectedPlan === p.code && !isCurrent ? (
-                    <p className="mt-3 text-xs font-semibold text-[var(--mt-muted)]">
-                      Checkout em breve.
-                    </p>
-                  ) : null}
                 </div>
               </div>
             );

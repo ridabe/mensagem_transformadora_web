@@ -105,7 +105,12 @@ function getEffectiveLimit(input: {
   const status = (input.status ?? "free").trim().toLowerCase() || "free";
   const isPaid = planCode !== "free";
 
-  if (isPaid && (status === "active" || status === "trialing")) return { kind: "unlimited" };
+  const paidLimit = typeof input.planLimit === "number" && input.planLimit >= 0 ? input.planLimit : null;
+
+  if (isPaid && (status === "active" || status === "trialing")) {
+    if (paidLimit == null) return { kind: "unlimited" };
+    return { kind: "limited", limit: paidLimit };
+  }
 
   if (status === "past_due") {
     const end = parseDbTimestamp(input.currentPeriodEnd);
@@ -113,14 +118,18 @@ function getEffectiveLimit(input: {
     const safeGraceDays = Number.isFinite(graceDays) && graceDays >= 0 ? graceDays : 3;
     if (end) {
       const graceEndMs = end.getTime() + safeGraceDays * 24 * 60 * 60 * 1000;
-      if (Date.now() <= graceEndMs) return { kind: "unlimited" };
+      if (Date.now() <= graceEndMs) {
+        if (isPaid && paidLimit == null) return { kind: "unlimited" };
+        if (isPaid && paidLimit != null) return { kind: "limited", limit: paidLimit };
+        return { kind: "limited", limit: 10 };
+      }
     }
   }
 
   const freeLimit = 10;
   if (isPaid) return { kind: "limited", limit: freeLimit };
 
-  const limit = typeof input.planLimit === "number" && input.planLimit >= 0 ? input.planLimit : freeLimit;
+  const limit = paidLimit ?? freeLimit;
   return { kind: "limited", limit };
 }
 

@@ -35,6 +35,11 @@ function extractMissingEnvFromError(err: unknown): string | null {
   return match?.[1]?.trim() ? match[1].trim() : null;
 }
 
+function getPreSermonLimitMessage(sp: Record<string, string | string[] | undefined> | undefined): string | null {
+  const raw = getString(sp, "reason")?.trim() ?? "";
+  return raw ? raw : null;
+}
+
 export async function createPreSermonAction(formData: FormData) {
   "use server";
 
@@ -50,7 +55,13 @@ export async function createPreSermonAction(formData: FormData) {
 
   const profile = await requireLeader();
   const permission = await canCreatePreSermon(profile.authUserId);
-  if (!permission.allowed) redirect("/lider/sermoes/novo?error=limit");
+  if (!permission.allowed) {
+    const msg =
+      "errorMessage" in permission && typeof permission.errorMessage === "string"
+        ? permission.errorMessage
+        : "Não foi possível criar o pré-sermão agora.";
+    redirect(`/lider/sermoes/novo?error=limit&reason=${encodeURIComponent(msg)}`);
+  }
 
   const title = normalizeOptionalText(getFormString(formData, "title"));
   const mainVerse = normalizeOptionalText(getFormString(formData, "main_verse"));
@@ -99,6 +110,7 @@ function getString(
 export default async function LiderNovoSermoesPage({ searchParams }: LiderNovoSermoesPageProps) {
   const sp = searchParams ? await searchParams : undefined;
   const error = getString(sp, "error");
+  const limitReason = getPreSermonLimitMessage(sp);
 
   try {
     await createClient();
@@ -123,7 +135,8 @@ export default async function LiderNovoSermoesPage({ searchParams }: LiderNovoSe
       : error === "main_verse"
         ? "O versículo principal é obrigatório."
         : error === "limit"
-          ? "Seu plano gratuito permite até 10 pré-sermões por mês. Seu ciclo será renovado automaticamente na próxima data de renovação ou você pode fazer upgrade agora."
+          ? limitReason ??
+            "Seu plano atingiu o limite de pré-sermões neste ciclo. Seu ciclo será renovado automaticamente na próxima data de renovação ou você pode fazer upgrade agora."
         : error === "create"
           ? "Não foi possível criar o pré-sermão."
           : null;
