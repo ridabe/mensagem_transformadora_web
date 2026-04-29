@@ -189,3 +189,27 @@ export async function requireLeader(): Promise<CurrentProfile> {
   if (profile.role !== "leader") redirect("/admin/dashboard");
   return profile;
 }
+
+export async function canCreatePreSermon(profileId: string): Promise<boolean> {
+  if (!profileId || !profileId.trim()) return false;
+
+  const enforce = process.env.MT_ENFORCE_PRE_SERMON_SUBSCRIPTION?.trim() === "true";
+  if (!enforce) return true;
+
+  const service = createServiceRoleClient();
+  const { data } = await service
+    .from("subscriptions")
+    .select("plan,status,current_period_end")
+    .eq("leader_id", profileId)
+    .maybeSingle();
+
+  const status = data && typeof data.status === "string" ? data.status : "free";
+  if (status === "active" || status === "trialing") return true;
+  if (status === "free") return true;
+
+  const periodEnd =
+    data && typeof data.current_period_end === "string" ? new Date(data.current_period_end) : null;
+  if (periodEnd && Number.isFinite(periodEnd.getTime()) && periodEnd.getTime() > Date.now()) return true;
+
+  return false;
+}

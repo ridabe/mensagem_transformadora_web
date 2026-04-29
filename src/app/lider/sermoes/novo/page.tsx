@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { requireLeader } from "@/lib/auth/profiles";
+import { canCreatePreSermon, requireLeader } from "@/lib/auth/profiles";
 import { createClient } from "@/lib/supabase/server";
 
 type PreSermonStatus = "draft" | "active";
@@ -49,6 +49,8 @@ export async function createPreSermonAction(formData: FormData) {
   }
 
   const profile = await requireLeader();
+  const allowed = await canCreatePreSermon(profile.authUserId);
+  if (!allowed) redirect("/lider/assinatura?error=upgrade");
 
   const title = normalizeOptionalText(getFormString(formData, "title"));
   const mainVerse = normalizeOptionalText(getFormString(formData, "main_verse"));
