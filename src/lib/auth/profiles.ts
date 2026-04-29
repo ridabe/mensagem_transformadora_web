@@ -190,26 +190,265 @@ export async function requireLeader(): Promise<CurrentProfile> {
   return profile;
 }
 
-export async function canCreatePreSermon(profileId: string): Promise<boolean> {
-  if (!profileId || !profileId.trim()) return false;
+type SubscriptionStatus =
+  | "free"
+  | "active"
+  | "trialing"
+  | "cancelled"
+  | "expired"
+  | "past_due"
+  | "unpaid"
+  | "incomplete";
 
-  const enforce = process.env.MT_ENFORCE_PRE_SERMON_SUBSCRIPTION?.trim() === "true";
-  if (!enforce) return true;
+type DbSubscriptionRow = {
+  plan: string;
+  status: SubscriptionStatus | string;
+  current_period_start: string | null;
+  current_period_end: string | null;
+};
+
+type DbPlanRow = {
+  code: string;
+  monthly_pre_sermon_limit: number | null;
+};
+
+export type CurrentSubscriptionInfo = {
+  plan: string;
+  status: SubscriptionStatus | string;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  monthly_pre_sermon_limit: number | null;
+};
+
+export type CurrentUsageInfo = {
+  used: number;
+  cycle_start: string | null;
+  cycle_end: string | null;
+};
+
+export type CanCreatePreSermonResult =
+  | {
+      allowed: true;
+      subscription: CurrentSubscriptionInfo;
+      usage: CurrentUsageInfo;
+    }
+  | {
+      allowed: false;
+      errorMessage: string;
+      subscription: CurrentSubscriptionInfo;
+      usage: CurrentUsageInfo;
+    };
+
+function parseIsoDate(value: unknown): Date | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const d = new Date(value);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
+/**
+ * Indica se um plano deve ser tratado como "pago" para fins de quota (qualquer código diferente de free).
+ */
+function isPaidPlan(planCode: string): boolean {
+  const normalized = planCode.trim().toLowerCase();
+  return normalized !== "" && normalized !== "free";
+}
+
+/**
+ * Indica se um status permite benefícios de plano pago normalmente (active/trialing).
+ */
+function isActiveLikeStatus(status: string): boolean {
+  return status === "active" || status === "trialing";
+}
+
+/**
+ * Indica se um status past_due ainda está dentro da tolerância (grace) baseada em current_period_end.
+ */
+function isPastDueWithinGrace(currentPeriodEnd: Date | null, now: Date): boolean {
+  if (!currentPeriodEnd) return false;
+  const graceDays = Number.parseInt(process.env.MT_PAST_DUE_GRACE_DAYS?.trim() || "", 10);
+  const safeGraceDays = Number.isFinite(graceDays) && graceDays >= 0 ? graceDays : 3;
+  const graceEndMs = currentPeriodEnd.getTime() + safeGraceDays * 24 * 60 * 60 * 1000;
+  return now.getTime() <= graceEndMs;
+}
+
+/**
+ * getCurrentSubscription(profileId)
+ *
+ * Retorna o plano/status vigente do líder e os limites aplicáveis do plano (ex.: monthly_pre_sermon_limit).
+ */
+export async function getCurrentSubscription(profileId: string): Promise<CurrentSubscriptionInfo> {
+  const safeProfileId = profileId?.trim() ? profileId.trim() : "";
+  if (!safeProfileId) {
+    return {
+      plan: "free",
+      status: "free",
+      current_period_start: null,
+      current_period_end: null,
+      monthly_pre_sermon_limit: 10,
+    };
+  }
 
   const service = createServiceRoleClient();
-  const { data } = await service
+  const { data: subRow } = await service
     .from("subscriptions")
-    .select("plan,status,current_period_end")
-    .eq("leader_id", profileId)
-    .maybeSingle();
+    .select("plan,status,current_period_start,current_period_end")
+    .eq("leader_id", safeProfileId)
+    .maybeSingle<DbSubscriptionRow>();
 
-  const status = data && typeof data.status === "string" ? data.status : "free";
-  if (status === "active" || status === "trialing") return true;
-  if (status === "free") return true;
+  const planCode =
+    subRow && typeof subRow.plan === "string" && subRow.plan.trim() ? subRow.plan : "free";
+  const status =
+    subRow && typeof subRow.status === "string" && subRow.status.trim() ? subRow.status : "free";
+  const currentPeriodStart =
+    typeof subRow?.current_period_start === "string" ? subRow.current_period_start : null;
+  const currentPeriodEnd =
+    typeof subRow?.current_period_end === "string" ? subRow.current_period_end : null;
 
-  const periodEnd =
-    data && typeof data.current_period_end === "string" ? new Date(data.current_period_end) : null;
-  if (periodEnd && Number.isFinite(periodEnd.getTime()) && periodEnd.getTime() > Date.now()) return true;
+  const { data: planRow } = await service
+    .from("plans")
+    .select("code,monthly_pre_sermon_limit")
+    .eq("code", planCode)
+    .maybeSingle<DbPlanRow>();
 
-  return false;
+  let monthlyPreSermonLimit =
+    planRow && typeof planRow.monthly_pre_sermon_limit === "number"
+      ? planRow.monthly_pre_sermon_limit
+      : null;
+
+  if (planCode === "free" && monthlyPreSermonLimit == null) monthlyPreSermonLimit = 10;
+
+  return {
+    plan: planCode,
+    status,
+    current_period_start: currentPeriodStart,
+    current_period_end: currentPeriodEnd,
+    monthly_pre_sermon_limit: monthlyPreSermonLimit,
+  };
+}
+
+/**
+ * getCurrentUsage(profileId)
+ *
+ * Retorna quantos pre_sermons foram criados dentro do ciclo mensal atual (não usa mês calendário).
+ */
+export async function getCurrentUsage(profileId: string): Promise<CurrentUsageInfo> {
+  const safeProfileId = profileId?.trim() ? profileId.trim() : "";
+  if (!safeProfileId) return { used: 0, cycle_start: null, cycle_end: null };
+
+  const service = createServiceRoleClient();
+  const { data, error } = await service.rpc("mt_get_pre_sermon_quota", {
+    p_leader_id: safeProfileId,
+  });
+
+  const rowFromQuota =
+    !error && Array.isArray(data) && data.length
+      ? (data[0] as Record<string, unknown>)
+      : !error && data && typeof data === "object"
+        ? (data as Record<string, unknown>)
+        : null;
+
+  const usedFromQuota = rowFromQuota && typeof rowFromQuota.used === "number" ? rowFromQuota.used : null;
+  const cycleStartFromQuota =
+    rowFromQuota && typeof rowFromQuota.cycle_start === "string" ? rowFromQuota.cycle_start : null;
+  const cycleEndFromQuota =
+    rowFromQuota && typeof rowFromQuota.cycle_end === "string" ? rowFromQuota.cycle_end : null;
+
+  if (usedFromQuota != null && cycleStartFromQuota && cycleEndFromQuota) {
+    return {
+      used: Number.isFinite(usedFromQuota) && usedFromQuota >= 0 ? usedFromQuota : 0,
+      cycle_start: cycleStartFromQuota,
+      cycle_end: cycleEndFromQuota,
+    };
+  }
+
+  const { data: windowData } = await service.rpc("mt_get_pre_sermon_cycle_window", {
+    p_leader_id: safeProfileId,
+  });
+
+  const windowRow =
+    Array.isArray(windowData) && windowData.length
+      ? (windowData[0] as Record<string, unknown>)
+      : windowData && typeof windowData === "object"
+        ? (windowData as Record<string, unknown>)
+        : null;
+
+  const cycleStart = windowRow && typeof windowRow.cycle_start === "string" ? windowRow.cycle_start : null;
+  const cycleEnd = windowRow && typeof windowRow.cycle_end === "string" ? windowRow.cycle_end : null;
+
+  if (!cycleStart || !cycleEnd) return { used: 0, cycle_start: null, cycle_end: null };
+
+  const { count } = await service
+    .from("pre_sermons")
+    .select("id", { count: "exact", head: true })
+    .eq("leader_id", safeProfileId)
+    .gte("created_at", cycleStart)
+    .lt("created_at", cycleEnd);
+
+  return {
+    used: typeof count === "number" && count >= 0 ? count : 0,
+    cycle_start: cycleStart,
+    cycle_end: cycleEnd,
+  };
+}
+
+/**
+ * canCreatePreSermon(profileId)
+ *
+ * Enforce:
+ * - Plano free: máximo 10 pré-sermões por ciclo mensal.
+ * - Plano pago active/trialing: ilimitado.
+ * - failed/expired/cancelled/unpaid/incomplete: volta para regra do free.
+ * - past_due: permite durante tolerância (MT_PAST_DUE_GRACE_DAYS, default 3).
+ */
+export async function canCreatePreSermon(profileId: string): Promise<CanCreatePreSermonResult> {
+  const subscription = await getCurrentSubscription(profileId);
+  const usage = await getCurrentUsage(profileId);
+
+  const planCode = subscription.plan;
+  const status = String(subscription.status || "free").trim().toLowerCase();
+  const now = new Date();
+
+  const paid = isPaidPlan(planCode);
+  const currentPeriodEnd = parseIsoDate(subscription.current_period_end);
+  const pastDueAllowed = status === "past_due" && isPastDueWithinGrace(currentPeriodEnd, now);
+
+  const freeLimit = 10;
+  const planLimit =
+    typeof subscription.monthly_pre_sermon_limit === "number" && subscription.monthly_pre_sermon_limit >= 0
+      ? subscription.monthly_pre_sermon_limit
+      : null;
+
+  const isActiveOrTrial = isActiveLikeStatus(status);
+  const isPaidAllowed = paid && (isActiveOrTrial || pastDueAllowed);
+
+  const effectiveLimit =
+    isPaidAllowed && planLimit == null
+      ? null
+      : isPaidAllowed && planLimit != null
+        ? planLimit
+        : freeLimit;
+
+  if (effectiveLimit == null) {
+    return { allowed: true, subscription, usage };
+  }
+
+  if (effectiveLimit === 0) {
+    return {
+      allowed: false,
+      subscription,
+      usage,
+      errorMessage:
+        "Seu plano atual não permite criar pré-sermões no momento. Seu ciclo será renovado automaticamente na próxima data de renovação ou você pode fazer upgrade agora.",
+    };
+  }
+
+  if (usage.used < effectiveLimit) return { allowed: true, subscription, usage };
+
+  return {
+    allowed: false,
+    subscription,
+    usage,
+    errorMessage:
+      `Seu plano permite até ${effectiveLimit} pré-sermões por ciclo mensal. Seu ciclo será renovado automaticamente na próxima data de renovação ou você pode fazer upgrade agora.`,
+  };
 }
