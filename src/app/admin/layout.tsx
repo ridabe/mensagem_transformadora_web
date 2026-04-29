@@ -34,6 +34,18 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               Igrejas
             </Link>
             <Link
+              href="/admin/lideres"
+              className="font-semibold text-[var(--mt-text)] hover:underline"
+            >
+              Líderes
+            </Link>
+            <Link
+              href="/admin/pre-sermoes"
+              className="font-semibold text-[var(--mt-text)] hover:underline"
+            >
+              Pré-sermões
+            </Link>
+            <Link
               href="/mensagens"
               className="font-semibold text-[var(--mt-text)] hover:underline"
             >
