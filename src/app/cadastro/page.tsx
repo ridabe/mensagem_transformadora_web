@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { signup } from "./actions";
 
-import { SubmitButton } from "@/app/admin/login/submit-button";
+import { SubmitButton } from "./submit-button";
 import { createClient } from "@/lib/supabase/server";
 
 type SignupPageProps = {
@@ -66,101 +66,193 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
               : null;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-10">
-      <header className="flex flex-col gap-2">
-        <p className="text-sm text-[var(--mt-muted)]">Área do líder</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Cadastro</h1>
-        <p className="text-sm leading-6 text-[var(--mt-muted)]">
-          Crie sua conta gratuita para acessar a área do líder.
-        </p>
-      </header>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 bg-[var(--mt-gradient-primary)]" />
+      <div className="absolute top-1/4 left-0 w-96 h-96 bg-[var(--mt-gold)]/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-1/4 right-0 w-96 h-96 bg-[var(--mt-navy)]/5 rounded-full blur-3xl" />
 
-      {errorMessage ? (
-        <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4 text-sm text-[var(--mt-text)]">
-          {errorMessage}
-        </div>
-      ) : null}
-
-      <form
-        action={signup}
-        className="flex flex-col gap-4 rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6"
-      >
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">Nome completo</span>
-          <input
-            name="name"
-            type="text"
-            autoComplete="name"
-            required
-            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2"
-            placeholder="Seu nome"
-          />
-        </label>
-
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">E-mail</span>
-          <input
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2"
-            placeholder="voce@exemplo.com"
-          />
-        </label>
-
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">Senha</span>
-          <input
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            required
-            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2"
-            placeholder="••••••••"
-          />
-        </label>
-
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">Igreja</span>
-          <select
-            name="church_id"
-            required
-            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2"
-            defaultValue=""
-          >
-            <option value="" disabled>
-              Selecione sua igreja
-            </option>
-            {churches.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-                {c.city || c.state ? ` • ${[c.city, c.state].filter(Boolean).join(" / ")}` : ""}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-[var(--mt-muted)]">
-            Não encontrou sua igreja? Entre em contato com o administrador para solicitar o cadastro.
+      <div className="w-full max-w-lg relative z-10">
+        {/* Header section with modern card design */}
+        <div className="text-center mb-8 animate-fade-in-up">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-[var(--mt-gradient-gold)] shadow-lg shadow-[var(--mt-gold)]/20 mb-6">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-[var(--mt-blue-light)] uppercase tracking-wider mb-2">
+            Área do líder
           </p>
-          {churchesError ? (
-            <p className="text-xs text-red-600 dark:text-red-400">{churchesError}</p>
-          ) : null}
-        </label>
+          <h1 className="text-4xl font-bold text-[var(--mt-white)] mb-3">
+            Criar conta gratuita
+          </h1>
+          <p className="text-[var(--mt-blue-light)] leading-relaxed max-w-md mx-auto">
+            Comece sua jornada como líder e tenha acesso a ferramentas poderosas para organizar suas mensagens.
+          </p>
+        </div>
 
-        <div className="mt-2 flex items-center justify-between gap-4">
-          <SubmitButton />
-          <Link href="/login" className="text-sm font-semibold text-[var(--mt-text)] hover:underline">
-            Já tenho conta
+        {/* Error message with modern styling */}
+        {errorMessage ? (
+          <div className="mb-6 p-4 rounded-2xl bg-red-900/30 border border-red-700/50 text-red-200 animate-slide-in-right">
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm font-medium">{errorMessage}</p>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Signup form with modern card design */}
+        <form
+          action={signup}
+          className="bg-[var(--mt-blue-medium)] rounded-3xl shadow-xl shadow-black/5 p-8 border border-[var(--mt-border)] animate-fade-in-up stagger-2"
+        >
+          <div className="grid gap-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div>
+                <label htmlFor="name" className="form-label">
+                  Nome completo
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  className="form-input w-full"
+                  placeholder="Seu nome completo"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="email" className="form-label">
+                  E-mail
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  className="form-input w-full"
+                  placeholder="seu@email.com"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="password" className="form-label">
+                Senha
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                required
+                className="form-input w-full"
+                placeholder="••••••••"
+              />
+              <p className="text-xs text-[var(--mt-blue-light)] mt-2">
+                Mínimo 6 caracteres
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="church_id" className="form-label">
+                Igreja
+              </label>
+              <select
+                id="church_id"
+                name="church_id"
+                required
+                className="form-input w-full"
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  Selecione sua igreja
+                </option>
+                {churches.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                    {c.city || c.state ? ` • ${[c.city, c.state].filter(Boolean).join(" / ")}` : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-[var(--mt-blue-light)] mt-2">
+                Não encontrou sua igreja? Entre em contato com o administrador para solicitar o cadastro.
+              </p>
+              {churchesError ? (
+                <p className="text-xs text-red-600 dark:text-red-400 mt-2">{churchesError}</p>
+              ) : null}
+            </div>
+
+            <div className="pt-2">
+              <SubmitButton />
+            </div>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-[var(--mt-border)]">
+            <p className="text-center text-sm text-[var(--mt-blue-light)]">
+              Já tem conta?{" "}
+              <Link
+                href="/login"
+                className="font-semibold text-[var(--mt-gold)] hover:text-[var(--mt-white)] transition-colors duration-200"
+              >
+                Fazer login
+              </Link>
+            </p>
+          </div>
+        </form>
+
+        {/* Benefits section */}
+        <div className="mt-8 grid gap-4 sm:grid-cols-3 animate-fade-in-up stagger-3">
+          <div className="text-center p-4 rounded-2xl bg-[var(--mt-blue-medium)]/50 border border-[var(--mt-border)]">
+            <div className="w-8 h-8 bg-[var(--mt-gradient-gold)] rounded-xl flex items-center justify-center mx-auto mb-3">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-xs font-semibold text-[var(--mt-white)]">Gratuito</p>
+            <p className="text-xs text-[var(--mt-blue-light)] mt-1">Sempre</p>
+          </div>
+
+          <div className="text-center p-4 rounded-2xl bg-[var(--mt-blue-medium)]/50 border border-[var(--mt-border)]">
+            <div className="w-8 h-8 bg-[var(--mt-gradient-gold)] rounded-xl flex items-center justify-center mx-auto mb-3">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+              </svg>
+            </div>
+            <p className="text-xs font-semibold text-[var(--mt-white)]">10 pré-sermões</p>
+            <p className="text-xs text-[var(--mt-blue-light)] mt-1">Por mês</p>
+          </div>
+
+          <div className="text-center p-4 rounded-2xl bg-[var(--mt-blue-medium)]/50 border border-[var(--mt-border)]">
+            <div className="w-8 h-8 bg-[var(--mt-gradient-gold)] rounded-xl flex items-center justify-center mx-auto mb-3">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <p className="text-xs font-semibold text-[var(--mt-white)]">Offline-first</p>
+            <p className="text-xs text-[var(--mt-blue-light)] mt-1">Sempre disponível</p>
+          </div>
+        </div>
+
+        {/* Footer link */}
+        <div className="text-center mt-8 animate-fade-in-up stagger-4">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm text-[var(--mt-blue-light)] hover:text-[var(--mt-white)] transition-colors duration-200"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Voltar ao site
           </Link>
         </div>
-      </form>
-
-      <p className="text-sm text-[var(--mt-muted)]">
-        <Link href="/" className="font-semibold text-[var(--mt-text)] hover:underline">
-          Voltar ao site
-        </Link>
-      </p>
-    </main>
+      </div>
+    </div>
   );
 }
 

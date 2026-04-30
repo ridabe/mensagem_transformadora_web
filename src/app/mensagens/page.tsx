@@ -59,7 +59,7 @@ export default async function PublicSermonsPage({
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-10">
       <header className="flex flex-col gap-3">
-        <p className="inline-flex max-w-fit rounded-full bg-[#d0901c]/10 px-3 py-1 text-xs uppercase tracking-[0.3em] text-[#d0901c]">
+        <p className="inline-flex max-w-fit rounded-full bg-[var(--mt-gold)]/10 px-3 py-1 text-xs uppercase tracking-[0.3em] text-[var(--mt-gold)]">
           Blog de mensagens
         </p>
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -130,7 +130,7 @@ export default async function PublicSermonsPage({
                     href={`/mensagens/${s.slug}`}
                     className="group overflow-hidden rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
                   >
-                    <div className="aspect-[16/9] overflow-hidden rounded-t-[32px] bg-gradient-to-br from-[#071028] via-[#1f4a8c] to-[#d0901c] p-6 text-white">
+                    <div className="aspect-[16/9] overflow-hidden rounded-t-[32px] bg-gradient-to-br from-[var(--mt-navy)] via-[var(--mt-blue-medium)] to-[var(--mt-gold)] p-6 text-white">
                       <div className="flex items-center justify-between text-xs uppercase tracking-[0.25em] text-white/80">
                         <span>Mensagem</span>
                         <span>{formatPtBrDate(new Date(s.sermonDate))}</span>
@@ -150,10 +150,10 @@ export default async function PublicSermonsPage({
                         {truncateText(s.finalSummary ?? s.mainVerse, 160)}
                       </p>
                       <div className="mt-6 flex items-center justify-between gap-3">
-                        <span className="rounded-full bg-[#d0901c]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#d0901c]">
+                        <span className="rounded-full bg-[var(--mt-gold)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--mt-gold)]">
                           Ler agora
                         </span>
-                        <span className="text-sm font-semibold text-[var(--mt-navy)] transition group-hover:text-[#d0901c]">
+                        <span className="text-sm font-semibold text-[var(--mt-navy)] transition group-hover:text-[var(--mt-gold)]">
                           Abrir mensagem
                         </span>
                       </div>

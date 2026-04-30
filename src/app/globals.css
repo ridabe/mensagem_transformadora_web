@@ -1,27 +1,167 @@
+@import url('https://fonts.googleapis.com/css2?family=Georgia:wght@400;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  --mt-navy: #071028;
-  --mt-amber: #d0901c;
-  --mt-surface: #f8fafc;
-  --mt-text: #0f172a;
-  --mt-muted: #64748b;
-  --mt-border: #e2e8f0;
+  /* Official Color Palette */
+  --mt-navy: #1A2744;
+  --mt-night: #0D182A;
+  --mt-blue-medium: #243660;
+  --mt-gold: #F5C842;
+  --mt-amber: #E59410;
+  --mt-white: #FFFFFF;
+  --mt-blue-light: #B6B7DA;
+  --mt-cream: #FFF8E7;
+
+  /* Legacy aliases for backwards compatibility */
+  --mt-surface: #FFFFFF;
+  --mt-surface-elevated: #FFFFFF;
+  --mt-surface-muted: #F5F5F5;
+  --mt-text: #FFFFFF;
+  --mt-text-secondary: #B6B7DA;
+  --mt-muted: #B6B7DA;
+  --mt-border: #243660;
+
+  /* Gradients */
+  --mt-gradient-primary: linear-gradient(135deg, #1A2744 0%, #0D182A 100%);
+  --mt-gradient-gold: linear-gradient(135deg, #F5C842 0%, #E59410 100%);
+  --mt-gradient-navy: linear-gradient(135deg, #1A2744 0%, #243660 100%);
+  --mt-gradient-mesh: radial-gradient(circle at 20% 80%, rgba(245, 200, 66, 0.12) 0%, transparent 50%),
+                      radial-gradient(circle at 80% 20%, rgba(13, 24, 42, 0.1) 0%, transparent 50%),
+                      radial-gradient(circle at 40% 40%, rgba(182, 183, 218, 0.08) 0%, transparent 50%);
+
+  /* Shadows */
+  --mt-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.15);
+  --mt-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.2), 0 2px 4px -2px rgb(0 0 0 / 0.15);
+  --mt-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.25), 0 4px 6px -4px rgb(0 0 0 / 0.2);
+  --mt-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.25);
+  --mt-shadow-glow: 0 0 20px rgba(245, 200, 66, 0.25);
+
+  /* Typography */
+  --mt-font-display: 'Georgia', serif;
+  --mt-font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mt-font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Animations */
+  --mt-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --mt-transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --mt-transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --mt-surface: #05070f;
-    --mt-text: #e2e8f0;
-    --mt-muted: #94a3b8;
-    --mt-border: #111827;
+    --mt-surface: #1A2744;
+    --mt-surface-elevated: #243660;
+    --mt-surface-muted: #0D182A;
+    --mt-text: #FFFFFF;
+    --mt-text-secondary: #B6B7DA;
+    --mt-muted: #B6B7DA;
+    --mt-border: #243660;
   }
+}
+
+* {
+  font-family: var(--mt-font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--mt-font-heading);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+.display-title {
+  font-family: var(--mt-font-display);
+  font-weight: 700;
 }
 
 body {
   min-height: 100vh;
-  background: radial-gradient(circle at top left, rgba(208, 144, 28, 0.08), transparent 24%),
-    radial-gradient(circle at bottom right, rgba(11, 33, 74, 0.1), transparent 30%),
-    var(--mt-surface);
-  color: var(--mt-text);
+  background: var(--mt-gradient-primary);
+  color: var(--mt-white);
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* Modern form styles */
+.form-input {
+  @apply h-12 rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] px-4 text-sm outline-none transition-all duration-200;
+  @apply focus:border-[var(--mt-gold)] focus:ring-2 focus:ring-[var(--mt-gold)]/30 focus:shadow-lg;
+  color: var(--mt-white);
+  box-shadow: var(--mt-shadow-sm);
+}
+
+.form-input::placeholder {
+  color: var(--mt-blue-light);
+}
+
+.form-input:focus {
+  transform: translateY(-1px);
+}
+
+.form-label {
+  @apply text-sm font-medium mb-2 block;
+  color: var(--mt-white);
+}
+
+.form-button {
+  @apply h-12 rounded-2xl px-6 text-sm font-semibold;
+  background: var(--mt-gradient-gold);
+  color: var(--mt-night);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  @apply transition-all duration-200 hover:shadow-lg;
+  @apply focus:ring-2 focus:ring-[var(--mt-gold)]/30 focus:outline-none;
+  box-shadow: var(--mt-shadow-md), var(--mt-shadow-glow);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.form-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.form-button:active {
+  transform: translateY(0);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Animation utilities */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.6s ease-out;
+}
+
+/* Staggered animations */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+

@@ -56,68 +56,121 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       : null;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-10">
-      <header className="flex flex-col gap-2">
-        <p className="text-sm text-[var(--mt-muted)]">Área do líder</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Entrar</h1>
-        <p className="text-sm leading-6 text-[var(--mt-muted)]">
-          Faça login para acessar sua área restrita.
-        </p>
-      </header>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 bg-[var(--mt-gradient-primary)]" />
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-[var(--mt-gold)]/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[var(--mt-navy)]/5 rounded-full blur-3xl" />
 
-      {infoMessage ? (
-        <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4 text-sm text-[var(--mt-text)]">
-          {infoMessage}
+      <div className="w-full max-w-md relative z-10">
+        {/* Header section with modern card design */}
+        <div className="text-center mb-8 animate-fade-in-up">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-[var(--mt-gradient-gold)] shadow-lg shadow-[var(--mt-gold)]/20 mb-6">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-[var(--mt-blue-light)] uppercase tracking-wider mb-2">
+            Área do líder
+          </p>
+          <h1 className="text-4xl font-bold text-[var(--mt-white)] mb-3">
+            Bem-vindo de volta
+          </h1>
+          <p className="text-[var(--mt-blue-light)] leading-relaxed">
+            Faça login para acessar sua área restrita e gerenciar suas mensagens.
+          </p>
         </div>
-      ) : null}
 
-      {errorMessage ? (
-        <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4 text-sm text-[var(--mt-text)]">
-          {errorMessage}
-        </div>
-      ) : null}
+        {/* Messages with modern styling */}
+        {infoMessage ? (
+          <div className="mb-6 p-4 rounded-2xl bg-[var(--mt-gold)]/15 border border-[var(--mt-gold)]/30 text-[var(--mt-gold)] animate-slide-in-right">
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-[var(--mt-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm font-medium">{infoMessage}</p>
+            </div>
+          </div>
+        ) : null}
 
-      <form
-        action={login}
-        className="flex flex-col gap-4 rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6"
-      >
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">E-mail</span>
-          <input
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2"
-            placeholder="voce@exemplo.com"
-          />
-        </label>
+        {errorMessage ? (
+          <div className="mb-6 p-4 rounded-2xl bg-red-900/30 border border-red-700/50 text-red-200 animate-slide-in-right">
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm font-medium">{errorMessage}</p>
+            </div>
+          </div>
+        ) : null}
 
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">Senha</span>
-          <input
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2"
-            placeholder="••••••••"
-          />
-        </label>
+        {/* Login form with modern card design */}
+        <form
+          action={login}
+          className="bg-[var(--mt-blue-medium)] rounded-3xl shadow-xl shadow-black/5 p-8 border border-[var(--mt-border)] animate-fade-in-up stagger-2"
+        >
+          <div className="space-y-6">
+            <div>
+              <label htmlFor="email" className="form-label">
+                E-mail
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="form-input w-full"
+                placeholder="seu@email.com"
+              />
+            </div>
 
-        <div className="mt-2 flex items-center justify-between gap-4">
-          <SubmitButton />
-          <Link href="/cadastro" className="text-sm font-semibold text-[var(--mt-text)] hover:underline">
-            Criar conta
+            <div>
+              <label htmlFor="password" className="form-label">
+                Senha
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                className="form-input w-full"
+                placeholder="••••••••"
+              />
+            </div>
+
+            <div className="pt-2">
+              <SubmitButton />
+            </div>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-[var(--mt-border)]">
+            <p className="text-center text-sm text-[var(--mt-blue-light)]">
+              Ainda não tem conta?{" "}
+              <Link
+                href="/cadastro"
+                className="font-semibold text-[var(--mt-gold)] hover:text-[var(--mt-white)] transition-colors duration-200"
+              >
+                Criar conta gratuita
+              </Link>
+            </p>
+          </div>
+        </form>
+
+        {/* Footer link */}
+        <div className="text-center mt-8 animate-fade-in-up stagger-3">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm text-[var(--mt-muted)] hover:text-[var(--mt-text)] transition-colors duration-200"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Voltar ao site
           </Link>
         </div>
-      </form>
-
-      <p className="text-sm text-[var(--mt-muted)]">
-        <Link href="/" className="font-semibold text-[var(--mt-text)] hover:underline">
-          Voltar ao site
-        </Link>
-      </p>
-    </main>
+      </div>
+    </div>
   );
 }

@@ -9,9 +9,9 @@ export default async function HomePage() {
 
   return (
     <main className="flex flex-1 flex-col">
-      <section className="relative overflow-hidden bg-[#071028] text-white">
-        <div className="absolute inset-x-0 top-0 h-96 bg-[radial-gradient(circle_at_top_right,rgba(208,144,28,0.18),transparent_30%),radial-gradient(circle_at_30%_20%,rgba(91,116,255,0.12),transparent_30%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,16,40,0.92)_20%,rgba(7,16,40,0.82)_100%)]" />
+      <section className="relative overflow-hidden bg-[var(--mt-navy)] text-white">
+        <div className="absolute inset-x-0 top-0 h-96 bg-[radial-gradient(circle_at_top_right,rgba(245,200,66,0.18),transparent_30%),radial-gradient(circle_at_30%_20%,rgba(36,54,96,0.12),transparent_30%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(26,39,68,0.92)_20%,rgba(26,39,68,0.82)_100%)]" />
         <div className="relative mx-auto w-full max-w-7xl px-4 py-20 sm:py-24 lg:px-8">
           <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div className="max-w-2xl">
@@ -28,7 +28,7 @@ export default async function HomePage() {
               <div className="mt-10 flex flex-col gap-4 sm:flex-row">
                 <Link
                   href="/mensagens"
-                  className="inline-flex h-14 items-center justify-center rounded-full bg-[#ffd27b] px-7 text-sm font-semibold text-[#071028] transition hover:brightness-95"
+                  className="inline-flex h-14 items-center justify-center rounded-full bg-[var(--mt-gold)] px-7 text-sm font-semibold text-[var(--mt-navy)] transition hover:brightness-95"
                 >
                   Ver mensagens
                 </Link>
@@ -114,7 +114,7 @@ export default async function HomePage() {
       <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[1fr_0.9fr] lg:items-center">
           <div className="rounded-[32px] border border-slate-200/10 bg-white shadow-xl shadow-slate-900/5 p-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#d0901c]">Como funciona</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[var(--mt-gold)]">Como funciona</p>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
               Um fluxo organizado em três passos
             </h2>
@@ -148,7 +148,7 @@ export default async function HomePage() {
               },
             ].map((item) => (
               <div key={item.step} className="rounded-[28px] border border-slate-200/10 bg-slate-50 p-6 shadow-sm">
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#d0901c]/10 text-lg font-semibold text-[#d0901c]">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--mt-gold)]/10 text-lg font-semibold text-[var(--mt-gold)]"> 
                   {item.step}
                 </span>
                 <h3 className="mt-5 text-xl font-semibold text-slate-900">{item.title}</h3>
@@ -162,7 +162,7 @@ export default async function HomePage() {
       <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#d0901c]">Planos</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[var(--mt-gold)]">Planos</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
               Escolha o plano ideal para seu ministério
             </h2>
@@ -172,7 +172,7 @@ export default async function HomePage() {
           </div>
           <Link
             href="/cadastro"
-            className="inline-flex h-14 items-center justify-center rounded-full bg-[#071028] px-6 text-sm font-semibold text-white transition hover:brightness-110"
+            className="inline-flex h-14 items-center justify-center rounded-full bg-[var(--mt-navy)] px-6 text-sm font-semibold text-white transition hover:brightness-110"
           >
             Criar conta
           </Link>
@@ -219,7 +219,7 @@ export default async function HomePage() {
                   <h3 className="mt-3 text-2xl font-semibold text-slate-900">{plan.title}</h3>
                 </div>
                 {plan.badge ? (
-                  <span className="rounded-full bg-[#d0901c] px-3 py-1.5 text-xs font-semibold text-[#071028]">
+                  <span className="rounded-full bg-[var(--mt-gold)] px-3 py-1.5 text-xs font-semibold text-[var(--mt-navy)]">
                     {plan.badge}
                   </span>
                 ) : null}
@@ -232,7 +232,7 @@ export default async function HomePage() {
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                   {plan.highlight}
                 </span>
-                <span className="text-sm font-semibold text-[#071028] transition group-hover:text-[#d0901c]">
+                <span className="text-sm font-semibold text-[var(--mt-navy)] transition group-hover:text-[var(--mt-gold)]">
                   Escolher
                 </span>
               </div>
@@ -245,7 +245,7 @@ export default async function HomePage() {
         <div className="rounded-[32px] border border-slate-200/90 bg-white p-10 shadow-xl shadow-slate-900/5">
           <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#d0901c]">
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--mt-gold)]">
                 NOVIDADE
               </p>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
@@ -257,7 +257,7 @@ export default async function HomePage() {
               <div className="mt-8 flex flex-col gap-4 sm:flex-row">
                 <Link
                   href="/mensagens"
-                  className="inline-flex h-14 items-center justify-center rounded-full bg-[#071028] px-7 text-sm font-semibold text-white transition hover:brightness-110"
+                  className="inline-flex h-14 items-center justify-center rounded-full bg-[var(--mt-navy)] px-7 text-sm font-semibold text-white transition hover:brightness-110"
                 >
                   Ver publicações
                 </Link>

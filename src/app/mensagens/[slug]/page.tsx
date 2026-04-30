@@ -115,7 +115,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
       <section className="rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="space-y-4">
-            <p className="inline-flex max-w-fit rounded-full bg-[#d0901c]/10 px-3 py-1 text-xs uppercase tracking-[0.3em] text-[#d0901c]">
+            <p className="inline-flex max-w-fit rounded-full bg-[var(--mt-gold)]/10 px-3 py-1 text-xs uppercase tracking-[0.3em] text-[var(--mt-gold)]">
               Mensagem pública
             </p>
             <div className="space-y-2">
@@ -147,7 +147,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
         <article className="flex flex-col gap-6">
           {sermon.finalSummary ? (
             <section className="rounded-[32px] border border-[var(--mt-border)] bg-white p-6 shadow-sm">
-              <p className="text-sm uppercase tracking-[0.3em] text-[#d0901c]">Resumo rápido</p>
+              <p className="text-sm uppercase tracking-[0.3em] text-[var(--mt-gold)]">Resumo rápido</p>
               <p className="mt-4 whitespace-pre-wrap text-base leading-7 text-[var(--mt-text)]">
                 {sermon.finalSummary}
               </p>
@@ -167,7 +167,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
             <section className="rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
               <div className="flex items-center justify-between gap-4">
                 <h2 className="text-lg font-semibold">Pontos principais</h2>
-                <span className="rounded-full bg-[#d0901c]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-[#d0901c]">
+                <span className="rounded-full bg-[var(--mt-gold)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--mt-gold)]">
                   {sermon.keyPoints.length} itens
                 </span>
               </div>
