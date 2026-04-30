@@ -1,86 +1,190 @@
 import Link from "next/link";
 import Image from "next/image";
 
-import { getPublicSermons } from "@/features/sermons/sermon.repository";
-import { formatPtBrDate, truncateText } from "@/lib/format";
-
 import planoFreeImage from "../../img/plano_free.png";
 import planoBasicoImage from "../../img/plano_basico.png";
 import planoProImage from "../../img/plano_pro.png";
 
 export default async function HomePage() {
-  let latest:
-    | Awaited<ReturnType<typeof getPublicSermons>>["items"]
-    | [];
-
-  try {
-    const res = await getPublicSermons({ page: 1, pageSize: 6 });
-    latest = res.items;
-  } catch {
-    latest = [];
-  }
 
   return (
     <main className="flex flex-1 flex-col">
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(70%_70%_at_50%_20%,rgba(208,144,28,0.22),transparent_60%),radial-gradient(60%_60%_at_30%_10%,rgba(11,33,74,0.22),transparent_55%)]" />
-        <div className="relative mx-auto w-full max-w-6xl px-4 py-16 sm:py-20">
-          <div className="max-w-3xl">
-            <p className="inline-flex items-center gap-2 rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-3 py-1 text-xs font-medium text-[var(--mt-muted)]">
-              100% offline no app • publicação opcional e controlada por você
-            </p>
-            <h1 className="mt-5 text-balance text-4xl font-semibold tracking-tight text-[var(--mt-text)] sm:text-5xl">
-              Transforme suas anotações de pregação em mensagens organizadas e
-              compartilháveis
-            </h1>
-            <p className="mt-5 max-w-2xl text-pretty text-lg leading-8 text-[var(--mt-muted)]">
-              Crie suas mensagens no app (offline-first) e publique no site
-              apenas quando desejar. Nenhuma mensagem é publicada
-              automaticamente.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/mensagens"
-                className="inline-flex h-12 items-center justify-center rounded-full bg-[var(--mt-navy)] px-6 text-sm font-semibold text-white hover:opacity-95"
-              >
-                Ver mensagens
-              </Link>
-              <a
-                href="https://play.google.com/store/search?q=mensagem%20transformadora&c=apps"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-12 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-6 text-sm font-semibold text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
-              >
-                Baixar App
-              </a>
+      <section className="relative overflow-hidden bg-[#071028] text-white">
+        <div className="absolute inset-x-0 top-0 h-96 bg-[radial-gradient(circle_at_top_right,rgba(208,144,28,0.18),transparent_30%),radial-gradient(circle_at_30%_20%,rgba(91,116,255,0.12),transparent_30%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,16,40,0.92)_20%,rgba(7,16,40,0.82)_100%)]" />
+        <div className="relative mx-auto w-full max-w-7xl px-4 py-20 sm:py-24 lg:px-8">
+          <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div className="max-w-2xl">
+              <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-slate-200/80">
+                100% offline no app • publicação opcional
+              </p>
+              <h1 className="mt-6 text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
+                Transforme suas anotações de pregação em mensagens organizadas e compartilháveis
+              </h1>
+              <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
+                Crie suas mensagens no app offline, gerencie pré-sermões com segurança e publique na web apenas quando quiser.
+                Um fluxo moderno pensado para líderes que desejam controle, clareza e impacto.
+              </p>
+              <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+                <Link
+                  href="/mensagens"
+                  className="inline-flex h-14 items-center justify-center rounded-full bg-[#ffd27b] px-7 text-sm font-semibold text-[#071028] transition hover:brightness-95"
+                >
+                  Ver mensagens
+                </Link>
+                <a
+                  href="https://play.google.com/store/search?q=mensagem%20transformadora&c=apps"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-14 items-center justify-center rounded-full border border-white/15 bg-white/5 px-7 text-sm font-semibold text-white transition hover:bg-white/10"
+                >
+                  Baixar App
+                </a>
+              </div>
+              <div className="mt-10 grid gap-4 sm:grid-cols-2">
+                {[
+                  {
+                    label: "Controle total",
+                    detail: "Publicação feita por você, quando estiver pronto.",
+                  },
+                  {
+                    label: "Foco no conteúdo",
+                    detail: "Estruture verso, pontos e aplicações com clareza.",
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur"
+                  >
+                    <p className="text-xs uppercase tracking-[0.25em] text-slate-300/80">{item.label}</p>
+                    <p className="mt-3 text-sm leading-6 text-slate-200">{item.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-[0_46px_80px_-64px_rgba(255,255,255,0.34)] backdrop-blur">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-300/80">
+                  Fluxo pensado para líderes
+                </p>
+                <h2 className="mt-4 text-3xl font-semibold text-white">Organize, publique e compartilhe</h2>
+                <div className="mt-8 space-y-6">
+                  {[
+                    {
+                      title: "Offline-first",
+                      description: "Crie e edite sem conexão e sincronize quando estiver pronto.",
+                    },
+                    {
+                      title: "Publicação opcional",
+                      description: "Escolha o que vai ao site e mantenha privacidade para o restante.",
+                    },
+                    {
+                      title: "Link exclusivo",
+                      description: "Cada mensagem ganha URL própria, pronta para compartilhar.",
+                    },
+                  ].map((item) => (
+                    <div key={item.title} className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                      <p className="text-sm font-semibold text-white">{item.title}</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-300">{item.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {[
+                  { label: "Planos pensados para líderes", value: "Free, Básico e Pro" },
+                  { label: "Acesso rápido", value: "Cadastro e uso imediato" },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="rounded-3xl border border-white/10 bg-[#071028]/80 p-6"
+                  >
+                    <p className="text-xs uppercase tracking-[0.25em] text-slate-400/80">{item.label}</p>
+                    <p className="mt-3 text-lg font-semibold text-white">{item.value}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-6xl px-4 py-12">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="grid gap-10 lg:grid-cols-[1fr_0.9fr] lg:items-center">
+          <div className="rounded-[32px] border border-slate-200/10 bg-white shadow-xl shadow-slate-900/5 p-8">
+            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#d0901c]">Como funciona</p>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
+              Um fluxo organizado em três passos
+            </h2>
+            <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">
+              Crie no app offline, revise na área de líder e publique apenas quando desejar.
+              Cada etapa foi pensada para reduzir atrito e manter o foco no conteúdo.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {[
+              {
+                step: "1",
+                title: "Crie no app",
+                description: "Anote versículo, pontos e conclusão mesmo sem internet.",
+              },
+              {
+                step: "2",
+                title: "Revise no líder",
+                description: "Administre pré-sermões e acompanhe o progresso.",
+              },
+              {
+                step: "3",
+                title: "Publique quando quiser",
+                description: "Venda o conteúdo com URL própria e controle total.",
+              },
+              {
+                step: "4",
+                title: "Acompanhe resultados",
+                description: "Veja quantas pessoas acessaram sua mensagem.",
+              },
+            ].map((item) => (
+              <div key={item.step} className="rounded-[28px] border border-slate-200/10 bg-slate-50 p-6 shadow-sm">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#d0901c]/10 text-lg font-semibold text-[#d0901c]">
+                  {item.step}
+                </span>
+                <h3 className="mt-5 text-xl font-semibold text-slate-900">{item.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight">Planos</h2>
-            <p className="mt-2 text-sm text-[var(--mt-muted)]">
-              Escolha o plano ideal e comece a criar seus pré-sermões hoje mesmo.
+            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#d0901c]">Planos</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
+              Escolha o plano ideal para seu ministério
+            </h2>
+            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+              Tenha previsibilidade e recursos alinhados ao ritmo da sua criação de conteúdo.
             </p>
           </div>
           <Link
             href="/cadastro"
-            className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-5 text-sm font-semibold text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
+            className="inline-flex h-14 items-center justify-center rounded-full bg-[#071028] px-6 text-sm font-semibold text-white transition hover:brightness-110"
           >
             Criar conta
           </Link>
         </div>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid gap-5 lg:grid-cols-3">
           {[
             {
               title: "Plano Free",
               subtitle: "Comece sem pagar",
               description:
-                "Acesso a 10 pré-sermões por mês para você testar o fluxo completo e organizar suas mensagens.",
+                "Acesso a 10 pré-sermões por mês para você testar o fluxo completo.",
               highlight: "10 pré-sermões/mês",
               image: planoFreeImage,
             },
@@ -88,7 +192,7 @@ export default async function HomePage() {
               title: "Plano Básico",
               subtitle: "Mais espaço para crescer",
               description:
-                "Ideal para quem quer constância: organize sua rotina e crie até 20 pré-sermões por mês.",
+                "Organize sua rotina e crie até 20 pré-sermões por mês.",
               highlight: "20 pré-sermões/mês",
               image: planoBasicoImage,
             },
@@ -96,7 +200,7 @@ export default async function HomePage() {
               title: "Plano Pro",
               subtitle: "Sem limites para criar",
               description:
-                "Para líderes que querem ir além: pré-sermões ilimitados e foco total no preparo da mensagem.",
+                "Pré-sermões ilimitados para líderes focados no preparo da mensagem.",
               highlight: "Pré-sermões ilimitados",
               image: planoProImage,
               badge: "Recomendado",
@@ -105,147 +209,92 @@ export default async function HomePage() {
             <Link
               key={plan.title}
               href="/cadastro"
-              className="group relative overflow-hidden rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] transition hover:-translate-y-0.5 hover:border-[color:var(--mt-amber)]"
+              className="group overflow-hidden rounded-[32px] border border-slate-200/90 bg-white p-6 shadow-lg transition hover:-translate-y-1 hover:shadow-2xl"
             >
-              <div className="absolute inset-0 opacity-0 transition group-hover:opacity-100">
-                <div className="absolute -left-24 -top-24 h-64 w-64 rounded-full bg-[color:var(--mt-amber)]/10 blur-2xl" />
-                <div className="absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-[color:var(--mt-navy)]/10 blur-2xl" />
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.25em] text-slate-500">
+                    {plan.subtitle}
+                  </p>
+                  <h3 className="mt-3 text-2xl font-semibold text-slate-900">{plan.title}</h3>
+                </div>
+                {plan.badge ? (
+                  <span className="rounded-full bg-[#d0901c] px-3 py-1.5 text-xs font-semibold text-[#071028]">
+                    {plan.badge}
+                  </span>
+                ) : null}
               </div>
-
-              <div className="relative p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--mt-muted)]">
-                      {plan.subtitle}
-                    </p>
-                    <h3 className="mt-1 text-lg font-semibold tracking-tight">
-                      {plan.title}
-                    </h3>
-                  </div>
-                  {plan.badge ? (
-                    <span className="shrink-0 rounded-full bg-[color:var(--mt-amber)] px-3 py-1 text-xs font-semibold text-black">
-                      {plan.badge}
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="mt-4 overflow-hidden rounded-xl border border-[var(--mt-border)] bg-black/[0.02] dark:bg-white/[0.03]">
-                  <Image
-                    src={plan.image}
-                    alt={plan.title}
-                    sizes="(min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw"
-                    className="h-auto w-full"
-                    priority={plan.title === "Plano Free"}
-                  />
-                </div>
-
-                <p className="mt-4 text-sm leading-6 text-[var(--mt-muted)]">
-                  {plan.description}
-                </p>
-
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <span className="inline-flex items-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-3 py-1 text-xs font-semibold">
-                    {plan.highlight}
-                  </span>
-                  <span className="text-sm font-semibold text-[var(--mt-navy)] group-hover:underline">
-                    Ir para cadastro
-                  </span>
-                </div>
+              <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200/70 bg-slate-100">
+                <Image src={plan.image} alt={plan.title} className="h-auto w-full" sizes="100vw" />
+              </div>
+              <p className="mt-6 text-sm leading-6 text-slate-600">{plan.description}</p>
+              <div className="mt-6 flex items-center justify-between gap-4">
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                  {plan.highlight}
+                </span>
+                <span className="text-sm font-semibold text-[#071028] transition group-hover:text-[#d0901c]">
+                  Escolher
+                </span>
               </div>
             </Link>
           ))}
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-6xl px-4 py-12">
-        <h2 className="text-xl font-semibold tracking-tight">Benefícios</h2>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            {
-              title: "Offline-first",
-              desc: "Crie e organize suas mensagens no app, sem depender de internet.",
-            },
-            {
-              title: "Publicação opcional",
-              desc: "Você decide o que vai para o site e quando publicar.",
-            },
-            {
-              title: "Compartilhamento por link",
-              desc: "Envie sua mensagem completa com uma URL única.",
-            },
-            {
-              title: "Organização espiritual",
-              desc: "Estrutura clara: versículos, pontos, frases e resumo final.",
-            },
-            {
-              title: "SEO e leitura premium",
-              desc: "Página pública otimizada para leitura e descoberta.",
-            },
-            {
-              title: "Histórico ministerial",
-              desc: "Construa um acervo online com controle de visibilidade.",
-            },
-          ].map((item) => (
-            <div
-              key={item.title}
-              className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-5"
-            >
-              <h3 className="font-semibold">{item.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-[var(--mt-muted)]">
-                {item.desc}
+      <section className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
+        <div className="rounded-[32px] border border-slate-200/90 bg-white p-10 shadow-xl shadow-slate-900/5">
+          <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#d0901c]">
+                NOVIDADE
               </p>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
+                Acompanhe as mensagens compartilhadas pela nossa comunidade
+              </h2>
+              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+                Explore palavras e reflexões publicados por pessoas de todo o Brasil, organizados de forma clara para facilitar a leitura, o aprofundamento e o compartilhamento da Palavra.
+              </p>
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                <Link
+                  href="/mensagens"
+                  className="inline-flex h-14 items-center justify-center rounded-full bg-[#071028] px-7 text-sm font-semibold text-white transition hover:brightness-110"
+                >
+                  Ver publicações
+                </Link>
+                <a
+                  href="https://play.google.com/store/search?q=mensagem%20transformadora&c=apps"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-14 items-center justify-center rounded-full border border-slate-300 bg-white px-7 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+                >
+                  Baixar App
+                </a>
+              </div>
             </div>
-          ))}
-        </div>
-      </section>
 
-      <section className="mx-auto w-full max-w-6xl px-4 pb-14">
-        <div className="flex items-end justify-between gap-6">
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight">
-              Últimas mensagens publicadas
-            </h2>
-            <p className="mt-2 text-sm text-[var(--mt-muted)]">
-              Mensagens publicadas recentemente pelo app.
-            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {[
+                {
+                  title: "Conteúdo editorial",
+                  description: "Cada mensagem ganha espaço de leitura com resumidos e contexto claro.",
+                },
+                {
+                  title: "Blocos temáticos",
+                  description: "Seções visualmente separadas tornam a navegação mais leve e organizada.",
+                },
+                {
+                  title: "Design inspirador",
+                  description: "Cartões elegantes e modernos que valorizam o conteúdo do líder.",
+                },
+              ].map((item) => (
+                <div key={item.title} className="rounded-3xl border border-slate-200/90 bg-slate-50 p-6">
+                  <p className="text-xs uppercase tracking-[0.25em] text-slate-500">{item.title}</p>
+                  <p className="mt-4 text-sm leading-6 text-slate-600">{item.description}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <Link
-            href="/mensagens"
-            className="hidden text-sm font-medium text-[var(--mt-navy)] hover:underline sm:inline"
-          >
-            Ver todas
-          </Link>
         </div>
-
-        {latest.length === 0 ? (
-          <div className="mt-6 rounded-2xl border border-dashed border-[var(--mt-border)] bg-[var(--mt-surface)] p-8 text-center">
-            <p className="text-sm font-medium">Nenhuma mensagem encontrada</p>
-            <p className="mt-2 text-sm text-[var(--mt-muted)]">
-              Publique uma mensagem no app para gerar um link compartilhável.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {latest.map((s) => (
-              <Link
-                key={s.id}
-                href={`/mensagens/${s.slug}`}
-                className="group rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-5 hover:border-[color:var(--mt-amber)]"
-              >
-                <p className="text-xs font-medium text-[var(--mt-muted)]">
-                  {s.preacherName} • {s.churchName} •{" "}
-                  {formatPtBrDate(new Date(s.sermonDate))}
-                </p>
-                <h3 className="mt-2 text-base font-semibold leading-6 group-hover:text-[var(--mt-navy)]">
-                  {s.sermonTitle}
-                </h3>
-                <p className="mt-2 text-sm text-[var(--mt-muted)]">
-                  {truncateText(s.finalSummary ?? s.mainVerse, 120)}
-                </p>
-              </Link>
-            ))}
-          </div>
-        )}
       </section>
     </main>
   );

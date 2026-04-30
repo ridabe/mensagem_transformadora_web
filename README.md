@@ -63,7 +63,15 @@ Pré-requisitos:
 
 - Node.js (LTS recomendado)
 - Dependências instaladas: `npm install`
-- Variáveis de ambiente configuradas (ver `.env` do projeto)
+- Variáveis de ambiente configuradas localmente
+
+Para criar o arquivo local de ambiente a partir do exemplo:
+
+```bash
+npm run env:setup
+```
+
+Depois edite `.env.local` e preencha os valores reais do Supabase e de pagamentos antes de rodar.
 
 Comandos:
 

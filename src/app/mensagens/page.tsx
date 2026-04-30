@@ -3,7 +3,7 @@ import { getPublicSermons } from "@/features/sermons/sermon.repository";
 import { formatPtBrDate, truncateText } from "@/lib/format";
 
 export const metadata = {
-  title: "Mensagens públicas",
+  title: "Blog de mensagens publicadas",
 };
 
 type PublicSermonsPageProps = {
@@ -59,12 +59,14 @@ export default async function PublicSermonsPage({
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-10">
       <header className="flex flex-col gap-3">
-        <h1 className="text-3xl font-semibold tracking-tight">
-          Mensagens públicas
+        <p className="inline-flex max-w-fit rounded-full bg-[#d0901c]/10 px-3 py-1 text-xs uppercase tracking-[0.3em] text-[#d0901c]">
+          Blog de mensagens
+        </p>
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+          Palavras que edificam, reflexões que transformam
         </h1>
         <p className="max-w-2xl text-sm leading-6 text-[var(--mt-muted)]">
-          Pesquise por título, pregador, igreja ou versículo. Nada é publicado
-          automaticamente: só aparecem aqui mensagens enviadas pelo app.
+          Explore mensagens e testemunhos compartilhados, organizados para facilitar a leitura e o aprofundamento na Palavra.
         </p>
       </header>
 
@@ -121,26 +123,41 @@ export default async function PublicSermonsPage({
             </div>
           ) : (
             <>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-6 lg:grid-cols-2">
                 {result.items.map((s) => (
                   <Link
                     key={s.id}
                     href={`/mensagens/${s.slug}`}
-                    className="group rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-5 hover:border-[color:var(--mt-amber)]"
+                    className="group overflow-hidden rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
                   >
-                    <p className="text-xs font-medium text-[var(--mt-muted)]">
-                      {s.preacherName} • {s.churchName} •{" "}
-                      {formatPtBrDate(new Date(s.sermonDate))}
-                    </p>
-                    <h2 className="mt-2 text-base font-semibold leading-6 group-hover:text-[var(--mt-navy)]">
-                      {s.sermonTitle}
-                    </h2>
-                    <p className="mt-2 text-sm text-[var(--mt-muted)]">
-                      {truncateText(s.finalSummary ?? s.mainVerse, 140)}
-                    </p>
-                    <p className="mt-4 text-sm font-semibold text-[var(--mt-navy)]">
-                      Ler mensagem
-                    </p>
+                    <div className="aspect-[16/9] overflow-hidden rounded-t-[32px] bg-gradient-to-br from-[#071028] via-[#1f4a8c] to-[#d0901c] p-6 text-white">
+                      <div className="flex items-center justify-between text-xs uppercase tracking-[0.25em] text-white/80">
+                        <span>Mensagem</span>
+                        <span>{formatPtBrDate(new Date(s.sermonDate))}</span>
+                      </div>
+                      <h2 className="mt-6 text-2xl font-semibold leading-tight">{s.sermonTitle}</h2>
+                      <p className="mt-4 text-sm leading-6 text-white/80">
+                        {truncateText(s.finalSummary ?? s.mainVerse, 120)}
+                      </p>
+                    </div>
+                    <div className="p-6">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--mt-muted)]">
+                        <span>{s.preacherName}</span>
+                        <span>•</span>
+                        <span>{s.churchName}</span>
+                      </div>
+                      <p className="mt-4 text-sm leading-7 text-[var(--mt-text)]">
+                        {truncateText(s.finalSummary ?? s.mainVerse, 160)}
+                      </p>
+                      <div className="mt-6 flex items-center justify-between gap-3">
+                        <span className="rounded-full bg-[#d0901c]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#d0901c]">
+                          Ler agora
+                        </span>
+                        <span className="text-sm font-semibold text-[var(--mt-navy)] transition group-hover:text-[#d0901c]">
+                          Abrir mensagem
+                        </span>
+                      </div>
+                    </div>
                   </Link>
                 ))}
               </div>
