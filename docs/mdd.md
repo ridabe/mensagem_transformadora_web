@@ -55,6 +55,7 @@ Campos
 Campo	Tipo	Obrigatório	Descrição
 id	uuid	sim	mesmo ID do auth.users
 display_name	text	sim	nome público do usuário
+ministry_title	text	sim	função ministerial do líder (ex.: pastor, diacono, bispo, apostolo, missionario, pregador)
 email	text	sim	e-mail do usuário
 avatar_url	text	não	foto/avatar
 ministry_name	text	não	nome do ministério

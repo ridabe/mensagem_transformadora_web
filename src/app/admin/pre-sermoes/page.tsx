@@ -1,6 +1,6 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth/profiles";
-import { formatPtBrDate, truncateText } from "@/lib/format";
+import { formatLeaderDisplayName, formatPtBrDate, truncateText } from "@/lib/format";
 
 type PreSermonStatus = "draft" | "active" | "archived";
 
@@ -17,9 +17,10 @@ type PreSermonRow = {
 
 type LeaderLookupRow = {
   auth_user_id: string;
-  name: string;
+  display_name: string;
   email: string;
   church_id: string | null;
+  ministry_title: string | null;
 };
 
 type ChurchLookupRow = {
@@ -109,7 +110,7 @@ export default async function AdminPreSermoesPage({ searchParams }: AdminPreSerm
   if (leaderIds.length) {
     const { data: leaderData } = await service
       .from("profiles")
-      .select("auth_user_id,name,email,church_id")
+      .select("auth_user_id,display_name,email,church_id,ministry_title")
       .in("auth_user_id", leaderIds);
     for (const row of (leaderData ?? []) as LeaderLookupRow[]) {
       if (row?.auth_user_id) leaderMap.set(String(row.auth_user_id), row);
@@ -223,7 +224,7 @@ export default async function AdminPreSermoesPage({ searchParams }: AdminPreSerm
               const updatedLabel = updatedAt ? formatPtBrDate(updatedAt) : null;
 
               const leader = leaderMap.get(p.leader_id);
-              const leaderName = leader?.name ?? "Líder";
+              const leaderName = formatLeaderDisplayName(leader?.ministry_title ?? null, leader?.display_name ?? "") || "Líder";
               const leaderEmail = leader?.email ?? "";
 
               const church =

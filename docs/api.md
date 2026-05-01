@@ -329,6 +329,7 @@ Regras:
 - Retorna apenas se `status = active`.
 - Retorna um recorte do pré-sermão (para consumo no app), sem IDs internos.
 - Não retorna a mensagem completa (`full_sermon`).
+- `leader.name` já vem formatado com a função ministerial (quando disponível), ex.: `Pr. Paulo`.
 
 Resposta (200):
 
@@ -340,7 +341,7 @@ Resposta (200):
     "title": "...",
     "mainVerse": "...",
     "secondaryVerses": [],
-    "leader": { "name": "..." },
+    "leader": { "name": "Pr. Paulo" },
     "church": { "name": "..." }
   }
 }

@@ -23,6 +23,7 @@ Campos principais:
 - `auth_user_id` UUID único e não nulo (Supabase Auth user ID)
 - `name` text não nulo
 - `email` text não nulo
+- `ministry_title` text nulo (`pastor`, `diacono`, `bispo`, `apostolo`, `missionario`, `pregador`)
 - `role` text não nulo (`admin` ou `leader`)
 - `church_id` UUID nulo
 - `status` text não nulo (`active`, `blocked`, `pending`)

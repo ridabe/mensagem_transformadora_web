@@ -1,14 +1,16 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth/profiles";
-import { formatPtBrDate } from "@/lib/format";
+import { formatLeaderDisplayName, formatPtBrDate } from "@/lib/format";
 
 type ProfileStatus = "active" | "blocked" | "pending";
 
 type LeaderRow = {
   id: string;
   auth_user_id: string;
-  name: string;
+  name?: string;
+  display_name?: string;
   email: string;
+  ministry_title?: string | null;
   status: ProfileStatus | string;
   church_id: string | null;
   created_at?: string | null;
@@ -159,15 +161,15 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
 
   let leadersQuery = service
     .from("profiles")
-    .select("id,auth_user_id,name,email,status,church_id,created_at,churches(name)")
+    .select("id,auth_user_id,name,display_name,email,ministry_title,status,church_id,created_at,churches(name)")
     .eq("role", "leader")
-    .order("name", { ascending: true })
+    .order("display_name", { ascending: true })
     .limit(250);
 
   if (statusFilter !== "all") leadersQuery = leadersQuery.eq("status", statusFilter);
   if (q) {
     const escaped = q.replaceAll(",", " ");
-    leadersQuery = leadersQuery.or(`name.ilike.%${escaped}%,email.ilike.%${escaped}%`);
+    leadersQuery = leadersQuery.or(`display_name.ilike.%${escaped}%,name.ilike.%${escaped}%,email.ilike.%${escaped}%`);
   }
 
   const { data: leadersData, error: leadersError } = await leadersQuery;
@@ -359,11 +361,13 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
               const remaining = effective.kind === "limited" ? Math.max(0, effective.limit - usedInCycle) : null;
 
               const status = typeof l.status === "string" ? l.status : "active";
+              const baseName = (l.display_name ?? l.name ?? "").trim();
+              const leaderName = formatLeaderDisplayName(l.ministry_title ?? null, baseName) || baseName || "Líder";
 
               return (
                 <div key={l.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-semibold">{l.name}</p>
+                    <p className="truncate text-base font-semibold">{leaderName}</p>
                     <p className="mt-1 text-sm text-[var(--mt-muted)]">
                       {l.email} • {status}
                       {churchName ? ` • ${churchName}` : ""}

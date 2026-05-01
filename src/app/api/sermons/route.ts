@@ -49,6 +49,7 @@ export async function POST(request: Request) {
           id: user.id,
           auth_user_id: user.id,
           name: displayName,
+          display_name: displayName,
           email: user.email,
           role: "leader",
         },

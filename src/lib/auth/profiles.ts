@@ -9,10 +9,12 @@ export type CurrentProfile = {
   id: string;
   authUserId: string;
   name: string;
+  displayName: string;
   email: string;
   role: ProfileRole;
   status: ProfileStatus;
   churchId: string | null;
+  ministryTitle: string | null;
 };
 
 function normalizeRole(value: unknown): ProfileRole | null {
@@ -38,6 +40,49 @@ function isUuid(value: string): boolean {
   );
 }
 
+function getErrorText(err: unknown): string | null {
+  if (!err || typeof err !== "object") return null;
+  const message = "message" in err && typeof err.message === "string" ? err.message : null;
+  const details = "details" in err && typeof err.details === "string" ? err.details : null;
+  const hint = "hint" in err && typeof err.hint === "string" ? err.hint : null;
+  return message ?? details ?? hint ?? null;
+}
+
+function isMissingColumnError(err: unknown, column: string): boolean {
+  if (!err || typeof err !== "object") return false;
+  const code = "code" in err && typeof err.code === "string" ? err.code : null;
+  const text = (getErrorText(err) ?? "").toLowerCase();
+  const c = column.toLowerCase();
+  if (code === "42703" || code === "PGRST204") {
+    return text.includes(c) && (text.includes("does not exist") || text.includes("not exist") || text.includes("unknown"));
+  }
+  return text.includes(c) && (text.includes("does not exist") || text.includes("not exist"));
+}
+
+function normalizeMinistryTitleValue(value: unknown): string | null {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) return null;
+  const normalized = raw
+    .normalize("NFD")
+    .replaceAll(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replaceAll(/[^a-z]/g, "");
+
+  if (
+    normalized === "pastor" ||
+    normalized === "diacono" ||
+    normalized === "bispo" ||
+    normalized === "apostolo" ||
+    normalized === "missionario" ||
+    normalized === "pregador" ||
+    normalized === "lider"
+  ) {
+    return normalized;
+  }
+
+  return null;
+}
+
 export async function getCurrentProfile(): Promise<CurrentProfile | null> {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
@@ -46,16 +91,30 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
 
   const bootstrapAdminId = process.env.MT_BOOTSTRAP_ADMIN_AUTH_USER_ID?.trim() || null;
 
-  const byAuthUserId = await supabase
+  let byAuthUserId = await supabase
     .from("profiles")
-    .select("id,auth_user_id,name,email,role,status,church_id")
+    .select("id,auth_user_id,name,display_name,email,role,status,church_id,ministry_title")
     .eq("auth_user_id", user.id)
     .maybeSingle();
+
+  if (byAuthUserId.error && isMissingColumnError(byAuthUserId.error, "display_name")) {
+    byAuthUserId = await supabase
+      .from("profiles")
+      .select("id,auth_user_id,name,email,role,status,church_id,ministry_title")
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
+  }
 
   const row = byAuthUserId.data;
 
   if (!row?.id) {
     if (!user.email) return null;
+
+    const ministryTitleCandidate =
+      user.user_metadata && typeof user.user_metadata.ministry_title === "string"
+        ? user.user_metadata.ministry_title
+        : null;
+    const ministryTitle = normalizeMinistryTitleValue(ministryTitleCandidate);
 
     const churchIdCandidate =
       user.user_metadata && typeof user.user_metadata.church_id === "string"
@@ -74,17 +133,21 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
       if (churchRow?.id) churchOkId = String(churchRow.id);
     }
 
+    const displayName = getDisplayName(user);
+
     const created = await supabase
       .from("profiles")
       .insert({
         auth_user_id: user.id,
-        name: getDisplayName(user),
+        name: displayName,
+        display_name: displayName,
         email: user.email,
         role: "leader",
         status: "active",
         church_id: churchOkId,
+        ministry_title: ministryTitle,
       })
-      .select("id,auth_user_id,name,email,role,status,church_id")
+      .select("id,auth_user_id,name,display_name,email,role,status,church_id,ministry_title")
       .single();
 
     const createdRow = created.data;
@@ -106,14 +169,21 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
       }
     }
 
+    const createdDisplayName =
+      createdRow && typeof createdRow === "object" && "display_name" in createdRow && typeof createdRow.display_name === "string"
+        ? createdRow.display_name.trim()
+        : String(createdRow.name);
+
     return {
       id: String(createdRow.id),
       authUserId: String(createdRow.auth_user_id),
-      name: String(createdRow.name),
+      name: createdDisplayName,
+      displayName: createdDisplayName,
       email: String(createdRow.email),
       role,
       status: normalizeStatus(createdRow.status) ?? "active",
       churchId: createdRow.church_id ? String(createdRow.church_id) : null,
+      ministryTitle: createdRow.ministry_title ? String(createdRow.ministry_title) : null,
     };
   }
 
@@ -131,6 +201,42 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
   }
 
   if (!role) return null;
+
+  const rawDisplayName =
+    row && typeof row === "object" && "display_name" in row && typeof row.display_name === "string"
+      ? row.display_name.trim()
+      : "";
+  const metaDisplayName =
+    user.user_metadata && typeof user.user_metadata.display_name === "string"
+      ? user.user_metadata.display_name.trim()
+      : "";
+
+  const baseName = String(row.name || "").trim();
+  const effectiveDisplayName = rawDisplayName || metaDisplayName || baseName;
+
+  const metaMinistryTitle =
+    user.user_metadata && typeof user.user_metadata.ministry_title === "string"
+      ? normalizeMinistryTitleValue(user.user_metadata.ministry_title)
+      : null;
+  const dbMinistryTitle =
+    row && typeof row === "object" && "ministry_title" in row ? normalizeMinistryTitleValue(row.ministry_title) : null;
+
+  if ((!rawDisplayName || rawDisplayName !== effectiveDisplayName) && effectiveDisplayName && row?.id) {
+    try {
+      await supabase
+        .from("profiles")
+        .update({ display_name: effectiveDisplayName, name: effectiveDisplayName })
+        .eq("id", row.id);
+    } catch {
+    }
+  }
+
+  if (!dbMinistryTitle && metaMinistryTitle && row?.id) {
+    try {
+      await supabase.from("profiles").update({ ministry_title: metaMinistryTitle }).eq("id", row.id);
+    } catch {
+    }
+  }
 
   if (!row.church_id) {
     const churchIdCandidate =
@@ -166,11 +272,13 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
   return {
     id: String(row.id),
     authUserId: String(row.auth_user_id ?? user.id),
-    name: String(row.name),
+    name: effectiveDisplayName,
+    displayName: effectiveDisplayName,
     email: String(row.email),
     role,
     status,
     churchId: row.church_id ? String(row.church_id) : null,
+    ministryTitle: row.ministry_title ? String(row.ministry_title) : null,
   };
 }
 

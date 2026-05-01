@@ -23,6 +23,30 @@ function isUuid(value: string): boolean {
   );
 }
 
+function normalizeMinistryTitleValue(value: string): string | null {
+  const raw = value.trim();
+  if (!raw) return null;
+  const normalized = raw
+    .normalize("NFD")
+    .replaceAll(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replaceAll(/[^a-z]/g, "");
+
+  if (
+    normalized === "pastor" ||
+    normalized === "diacono" ||
+    normalized === "bispo" ||
+    normalized === "apostolo" ||
+    normalized === "missionario" ||
+    normalized === "pregador" ||
+    normalized === "lider"
+  ) {
+    return normalized;
+  }
+
+  return null;
+}
+
 function redirectCadastroError(code: string, reason?: string) {
   const safe = (reason || "").trim().slice(0, 200);
   if (safe) redirect(`/cadastro?error=${encodeURIComponent(code)}&reason=${encodeURIComponent(safe)}`);
@@ -45,7 +69,10 @@ export async function signup(formData: FormData) {
   const email = getString(formData, "email").trim();
   const password = getString(formData, "password");
   const churchId = getString(formData, "church_id").trim();
+  const ministryTitleRaw = getString(formData, "ministry_title");
+  const ministryTitle = normalizeMinistryTitleValue(ministryTitleRaw);
 
+  if (!ministryTitle) redirect("/cadastro?error=ministry_title");
   if (name.length < 3) redirect("/cadastro?error=name");
   if (!email) redirect("/cadastro?error=email");
   if (password.length < 6) redirect("/cadastro?error=password");
@@ -63,7 +90,7 @@ export async function signup(formData: FormData) {
     email,
     password,
     options: {
-      data: { display_name: name, church_id: churchId },
+      data: { display_name: name, church_id: churchId, ministry_title: ministryTitle },
     },
   });
 
@@ -78,23 +105,25 @@ export async function signup(formData: FormData) {
     const inserted = await supabase.from("profiles").insert({
       auth_user_id: userId,
       name,
+      display_name: name,
       email,
       role: "leader",
       status: "active",
       church_id: churchId,
+      ministry_title: ministryTitle,
     });
 
     if (inserted.error) {
       const patched = await supabase
         .from("profiles")
-        .update({ church_id: churchId })
+        .update({ church_id: churchId, ministry_title: ministryTitle, display_name: name })
         .eq("auth_user_id", userId);
       if (patched.error) redirectCadastroError("profile", patched.error.message);
     }
 
     const { data: profileRow, error: profileReadError } = await supabase
       .from("profiles")
-      .select("church_id")
+      .select("church_id,ministry_title,display_name")
       .eq("auth_user_id", userId)
       .maybeSingle();
     if (profileReadError) redirectCadastroError("profile", profileReadError.message);
@@ -102,8 +131,22 @@ export async function signup(formData: FormData) {
       profileRow && typeof profileRow === "object" && "church_id" in profileRow
         ? profileRow.church_id
         : null;
+    const persistedMinistryTitle =
+      profileRow && typeof profileRow === "object" && "ministry_title" in profileRow
+        ? profileRow.ministry_title
+        : null;
+    const persistedDisplayName =
+      profileRow && typeof profileRow === "object" && "display_name" in profileRow
+        ? profileRow.display_name
+        : null;
     if (persistedChurchId !== churchId) {
       redirectCadastroError("profile", "Não foi possível vincular a igreja ao perfil.");
+    }
+    if (persistedMinistryTitle !== ministryTitle) {
+      redirectCadastroError("profile", "Não foi possível salvar sua função ministerial no perfil.");
+    }
+    if (persistedDisplayName !== name) {
+      redirectCadastroError("profile", "Não foi possível salvar seu nome no perfil.");
     }
 
     const subscriptionInserted = await supabase.from("subscriptions").insert({
