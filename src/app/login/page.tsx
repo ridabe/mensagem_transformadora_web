@@ -138,6 +138,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                 className="form-input w-full"
                 placeholder="••••••••"
               />
+              <div className="mt-3 text-right">
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-sm font-semibold text-[var(--mt-gold)] hover:text-[var(--mt-white)] transition-colors duration-200"
+                >
+                  Esqueci minha senha
+                </Link>
+              </div>
             </div>
 
             <div className="pt-2">
