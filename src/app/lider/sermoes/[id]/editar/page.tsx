@@ -417,7 +417,6 @@ export default async function LiderEditarSermoesPage({ params, searchParams }: E
 
   const secondaryVersesText = stringifySecondaryVerses(row.secondary_verses);
   const publishedSlug = getString(row.published_slug);
-  const isPublished = Boolean(publishedSlug);
 
   return (
     <main className="flex flex-col gap-6">
@@ -435,7 +434,7 @@ export default async function LiderEditarSermoesPage({ params, searchParams }: E
           <span className="text-sm font-semibold">{row.share_code}</span>
           <CopyShareCodeButton code={row.share_code} />
           {!isArchived ? (
-            isPublished ? (
+            publishedSlug ? (
               <Link
                 href={`/mensagens/${encodeURIComponent(publishedSlug)}`}
                 className="inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white shadow-md transition hover:-translate-y-[1px] hover:shadow-lg [background:var(--mt-gradient-gold)]"
