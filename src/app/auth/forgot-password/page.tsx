@@ -7,6 +7,7 @@ import { createClient, SUPABASE_BROWSER_CLIENT_SOURCE } from "@/lib/supabase/cli
 import { getSupabasePublicEnvStatus } from "@/lib/supabase/env";
 
 const FALLBACK_SITE_URL = "https://mensagem-transformadora-web.vercel.app";
+const FORGOT_PASSWORD_DEBUG_BUILD = "forgot-password-debug-v2";
 
 function normalizeSiteUrl(value: string): string {
   const trimmed = value.trim();
@@ -24,6 +25,7 @@ export default function ForgotPasswordPage() {
     return new URL(window.location.href).searchParams.get("debug") === "1";
   }, []);
 
+  const publicEnvStatus = getSupabasePublicEnvStatus();
   const hasSupabaseUrl = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const hasSupabaseKey = Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -48,7 +50,7 @@ export default function ForgotPasswordPage() {
     try {
       if (debug) {
         console.info("[forgot-password] supabase client source:", SUPABASE_BROWSER_CLIENT_SOURCE);
-        console.info("[forgot-password] getSupabasePublicEnvStatus:", getSupabasePublicEnvStatus());
+        console.info("[forgot-password] getSupabasePublicEnvStatus:", publicEnvStatus);
         console.info("[forgot-password] env:", {
           hasSupabaseUrl,
           hasSupabaseKey,
@@ -56,31 +58,47 @@ export default function ForgotPasswordPage() {
         });
       }
       const supabase = createClient();
-      console.info("[forgot-password] redirectTo:", `${siteUrl}/auth/reset-password`);
+      if (debug) console.info("[forgot-password] redirectTo:", `${siteUrl}/auth/reset-password`);
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(safeEmail, {
         redirectTo: `${siteUrl}/auth/reset-password`,
       });
       if (resetError) throw resetError;
       setSent(true);
     } catch (err) {
-      if (err && typeof err === "object" && "message" in err && typeof err.message === "string") {
-        console.error("[forgot-password] resetPasswordForEmail failed:", err.message);
-        if (debug) setDebugDetails(err.message);
-        if (/Variável de ambiente ausente:/i.test(err.message)) {
+      const status =
+        err && typeof err === "object" && "status" in err && typeof err.status === "number"
+          ? err.status
+          : null;
+      const message =
+        err && typeof err === "object" && "message" in err && typeof err.message === "string"
+          ? err.message
+          : null;
+
+      if (message) {
+        console.error("[forgot-password] resetPasswordForEmail failed:", message);
+        if (debug) setDebugDetails(message);
+        if (/Variável de ambiente ausente:/i.test(message)) {
           setError("Supabase não está configurado no ambiente.");
           return;
         }
 
-        if (/redirect/i.test(err.message) || /not allowed/i.test(err.message)) {
+        if (/redirect/i.test(message) || /not allowed/i.test(message)) {
           setError(
             "Não foi possível enviar o e-mail. Verifique a configuração de URL do site no Supabase.",
           );
           return;
         }
-      } else {
-        console.error("[forgot-password] resetPasswordForEmail failed:", err);
-        if (debug) setDebugDetails("Erro desconhecido no cliente.");
       }
+
+      if (status === 504 || /timeout/i.test(message ?? "")) {
+        setError(
+          "O serviço de autenticação está indisponível no momento. Tente novamente em instantes.",
+        );
+        return;
+      }
+
+      console.error("[forgot-password] resetPasswordForEmail failed:", err);
+      if (debug && !debugDetails) setDebugDetails("Erro desconhecido no cliente.");
 
       setError("Não foi possível enviar o e-mail. Verifique o endereço informado.");
     } finally {
@@ -117,9 +135,12 @@ export default function ForgotPasswordPage() {
 
         {debug ? (
           <div className="mb-6 p-4 rounded-2xl bg-[var(--mt-navy)]/20 border border-[var(--mt-border)] text-[var(--mt-blue-light)]">
+            <p className="text-xs break-words">build: {FORGOT_PASSWORD_DEBUG_BUILD}</p>
+            <p className="mt-1 text-xs break-words">client: {SUPABASE_BROWSER_CLIENT_SOURCE}</p>
+            <p className="mt-1 text-xs break-words">env: {publicEnvStatus.source}</p>
             <p className="text-xs break-words">
-              env NEXT_PUBLIC_SUPABASE_URL: {hasSupabaseUrl ? "OK" : "AUSENTE"}
-              {" • "}KEY: {hasSupabaseKey ? "OK" : "AUSENTE"}
+              NEXT_PUBLIC_SUPABASE_URL: {publicEnvStatus.hasUrl ? "OK" : "AUSENTE"}
+              {" • "}KEY: {publicEnvStatus.hasPublishableKey ? "OK" : "AUSENTE"}
             </p>
             <p className="mt-1 text-xs break-words">redirectTo: {siteUrl}/auth/reset-password</p>
           </div>
@@ -159,8 +180,8 @@ export default function ForgotPasswordPage() {
                 ) : null}
                 {debug ? (
                   <p className="mt-2 text-xs text-red-200/80 break-words">
-                    env NEXT_PUBLIC_SUPABASE_URL: {hasSupabaseUrl ? "OK" : "AUSENTE"}
-                    {" • "}KEY: {hasSupabaseKey ? "OK" : "AUSENTE"}
+                    NEXT_PUBLIC_SUPABASE_URL: {publicEnvStatus.hasUrl ? "OK" : "AUSENTE"}
+                    {" • "}KEY: {publicEnvStatus.hasPublishableKey ? "OK" : "AUSENTE"}
                   </p>
                 ) : null}
               </div>
