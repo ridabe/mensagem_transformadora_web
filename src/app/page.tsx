@@ -170,10 +170,10 @@ export default async function HomePage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[var(--mt-gold)]">Planos</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-[var(--mt-text)]">
               Escolha o plano ideal para seu ministério
             </h2>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+            <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--mt-muted)]">
               Tenha previsibilidade e recursos alinhados ao ritmo da sua criação de conteúdo.
             </p>
           </div>
