@@ -34,12 +34,25 @@ export default function ForgotPasswordPage() {
     const safeEmail = email.trim();
     try {
       const supabase = createClient();
+      console.info("[forgot-password] redirectTo:", `${siteUrl}/auth/reset-password`);
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(safeEmail, {
         redirectTo: `${siteUrl}/auth/reset-password`,
       });
       if (resetError) throw resetError;
       setSent(true);
-    } catch {
+    } catch (err) {
+      if (err && typeof err === "object" && "message" in err && typeof err.message === "string") {
+        console.error("[forgot-password] resetPasswordForEmail failed:", err.message);
+        if (/redirect/i.test(err.message) || /url/i.test(err.message)) {
+          setError(
+            "Não foi possível enviar o e-mail. Verifique a configuração de URL do site no Supabase.",
+          );
+          return;
+        }
+      } else {
+        console.error("[forgot-password] resetPasswordForEmail failed:", err);
+      }
+
       setError("Não foi possível enviar o e-mail. Verifique o endereço informado.");
     } finally {
       setPending(false);
