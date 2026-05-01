@@ -195,10 +195,14 @@ export async function checkDonationPixStatus(id: string): Promise<CheckDonationP
 }
 
 export function getAbacatePayProductId(planCode: string): string | null {
-  const normalized = planCode?.trim() ? planCode.trim() : "";
+  const normalized = planCode?.trim() ? planCode.trim().toLowerCase() : "";
   if (!normalized) return null;
-  if (normalized === "plano_basico") return process.env.ABACATEPAY_BASIC_PRODUCT_ID?.trim() || null;
-  if (normalized === "plano_pro") return process.env.ABACATEPAY_PRO_PRODUCT_ID?.trim() || null;
+  if (normalized === "plano_basico" || normalized === "basic") {
+    return process.env.ABACATEPAY_BASIC_PRODUCT_ID?.trim() || null;
+  }
+  if (normalized === "plano_pro" || normalized === "pro") {
+    return process.env.ABACATEPAY_PRO_PRODUCT_ID?.trim() || null;
+  }
   return null;
 }
 

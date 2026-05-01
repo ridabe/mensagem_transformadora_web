@@ -317,6 +317,49 @@ Requer autenticação: **não**
 
 Resposta: um único registro com os campos públicos da mensagem.
 
+---
+
+### 7) Obter pré-sermão por código (uso no app)
+
+`GET /api/pre-sermons/by-code?code=MT-XXXXX`
+
+Requer autenticação: **não**
+
+Regras:
+- Retorna apenas se `status = active`.
+- Retorna um recorte do pré-sermão (para consumo no app), sem IDs internos.
+- Não retorna a mensagem completa (`full_sermon`).
+
+Resposta (200):
+
+```json
+{
+  "success": true,
+  "sermon": {
+    "shareCode": "MT-K8F3Q",
+    "title": "...",
+    "mainVerse": "...",
+    "secondaryVerses": [],
+    "leader": { "name": "..." },
+    "church": { "name": "..." }
+  }
+}
+```
+
+Respostas de erro:
+- `400` — parâmetro `code` ausente ou inválido
+- `404` — não encontrado (inclui casos em que existe, mas não está active)
+- `500` — falha ao consultar
+
+## Publicação via Pré-sermão (Web)
+
+Além das rotas acima, existe o fluxo de publicação pela área do líder (UI web):
+- O líder pode preencher `full_sermon` no pré-sermão.
+- Ao publicar, o sistema cria um registro em `published_sermons` com `visibility=public` e `status=published`, e abre a URL pública `/mensagens/[slug]`.
+
+Observação:
+- O campo `source` usado atualmente para esse fluxo é `web_admin` (mesmo quando publicado pela área do líder).
+
 ## Eventos e logs (futuros)
 
 Tabelas previstas no MDD (para dashboards futuros):

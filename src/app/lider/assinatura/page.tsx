@@ -1,4 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentSubscription, getCurrentUsage, requireLeader } from "@/lib/auth/profiles";
 import { formatPtBrDate } from "@/lib/format";
 import { CreateCheckoutButton } from "./create-checkout-button";
@@ -13,6 +15,56 @@ type PlanRow = {
   monthly_pre_sermon_limit: number | null;
   is_active: boolean;
 };
+
+type DbSubscriptionMetaRow = {
+  status: string;
+  metadata: unknown;
+};
+
+function getString(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") return null;
+  return value as Record<string, unknown>;
+}
+
+export async function cancelPendingSubscriptionAction() {
+  "use server";
+
+  const profile = await requireLeader();
+  const service = createServiceRoleClient();
+
+  const { data: sub } = await service
+    .from("subscriptions")
+    .select("id,status,metadata")
+    .eq("leader_id", profile.authUserId)
+    .maybeSingle<{ id: string; status: string; metadata: unknown }>();
+
+  const status = getString(sub?.status)?.toLowerCase() ?? "free";
+  if (!sub?.id || status !== "pending") redirect("/lider/assinatura");
+
+  const currentMetadata = asRecord(sub.metadata) ?? {};
+  const nextMetadata: Record<string, unknown> = { ...currentMetadata };
+  delete nextMetadata.checkoutUrl;
+  delete nextMetadata.pendingPlanCode;
+
+  const patch = {
+    plan: "free",
+    status: "free",
+    provider_checkout_id: null,
+    provider_subscription_id: null,
+    provider_product_id: null,
+    current_period_start: null,
+    current_period_end: null,
+    cancelled_at: null,
+    metadata: nextMetadata,
+  };
+
+  await service.from("subscriptions").update(patch).eq("id", sub.id);
+  redirect("/lider/assinatura");
+}
 
 /**
  * Normaliza o status retornado da assinatura para exibição/decisões.
@@ -147,7 +199,7 @@ export default async function LiderAssinaturaPage() {
 
   const profile = await requireLeader();
 
-  const [subscription, usage, plansResult] = await Promise.all([
+  const [subscription, usage, plansResult, rawSubscriptionResult] = await Promise.all([
     getCurrentSubscription(profile.authUserId),
     getCurrentUsage(profile.authUserId),
     supabase
@@ -157,6 +209,11 @@ export default async function LiderAssinaturaPage() {
       )
       .eq("is_active", true)
       .order("price_in_cents", { ascending: true }),
+    supabase
+      .from("subscriptions")
+      .select("status,metadata")
+      .eq("leader_id", profile.authUserId)
+      .maybeSingle<DbSubscriptionMetaRow>(),
   ]);
 
   const status = normalizeSubscriptionStatus(String(subscription.status || "free"));
@@ -167,6 +224,11 @@ export default async function LiderAssinaturaPage() {
   const currentPlan = plansByCode.get(subscription.plan) ?? null;
   const currentPlanLabel = currentPlan?.name ?? (subscription.plan === "free" ? "Gratuito" : subscription.plan);
   const statusLabel = getStatusLabel(String(subscription.status || "free"));
+
+  const rawMetadata = rawSubscriptionResult.data?.metadata ?? null;
+  const pendingPlanCode = getString(asRecord(rawMetadata)?.pendingPlanCode) ?? null;
+  const pendingPlanName = pendingPlanCode ? (plansByCode.get(pendingPlanCode)?.name ?? pendingPlanCode) : null;
+  const pendingCheckoutUrl = getString(asRecord(rawMetadata)?.checkoutUrl) ?? null;
 
   const effectiveLimit = getEffectiveLimit({
     plan: subscription.plan,
@@ -197,6 +259,35 @@ export default async function LiderAssinaturaPage() {
           <p className="text-sm font-semibold text-red-600 dark:text-red-300">
             Não conseguimos confirmar sua renovação. Regularize sua assinatura para evitar limitações.
           </p>
+        </section>
+      ) : status === "pending" ? (
+        <section className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
+          <p className="text-sm font-semibold text-[var(--mt-text)]">Assinatura pendente</p>
+          <p className="mt-2 text-sm text-[var(--mt-muted)]">
+            {pendingPlanName
+              ? `Você iniciou a assinatura do plano ${pendingPlanName}, mas o pagamento ainda não foi confirmado.`
+              : "Você iniciou uma assinatura, mas o pagamento ainda não foi confirmado."}
+          </p>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            {pendingCheckoutUrl ? (
+              <a
+                href={pendingCheckoutUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-11 items-center justify-center rounded-xl px-5 text-sm font-semibold text-white shadow-md transition hover:-translate-y-[1px] hover:shadow-lg [background:var(--mt-gradient-gold)]"
+              >
+                Continuar pagamento
+              </a>
+            ) : null}
+            <form action={cancelPendingSubscriptionAction} className="w-full sm:w-auto">
+              <button
+                type="submit"
+                className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] px-5 text-sm font-semibold text-[var(--mt-text)] transition hover:bg-black/5"
+              >
+                Cancelar tentativa
+              </button>
+            </form>
+          </div>
         </section>
       ) : status === "failed" || status === "expired" || status === "unpaid" || status === "incomplete" ? (
         <section className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-6">

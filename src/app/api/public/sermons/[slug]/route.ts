@@ -140,6 +140,7 @@ export async function GET(
     .eq("slug", slug)
     .eq("visibility", "public")
     .eq("status", "published")
+    .eq("source", "web_admin")
     .maybeSingle<DbPublicSermonRow>();
 
   if (error) {

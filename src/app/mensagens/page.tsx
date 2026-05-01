@@ -153,7 +153,7 @@ export default async function PublicSermonsPage({
                         <span className="rounded-full bg-[var(--mt-gold)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--mt-gold)]">
                           Ler agora
                         </span>
-                        <span className="text-sm font-semibold text-[var(--mt-navy)] transition group-hover:text-[var(--mt-gold)]">
+                        <span className="text-sm font-semibold text-[var(--mt-muted)] transition group-hover:text-[var(--mt-gold)]">
                           Abrir mensagem
                         </span>
                       </div>

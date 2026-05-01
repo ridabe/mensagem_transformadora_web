@@ -69,7 +69,7 @@ export function CreateCheckoutButton({ planCode, className, label }: Props) {
         disabled={loading}
         className={
           className ??
-          "inline-flex h-11 w-full items-center justify-center rounded-xl bg-[var(--mt-navy)] px-5 text-sm font-semibold text-white hover:opacity-95 disabled:opacity-60"
+          "inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-xl px-5 text-sm font-semibold text-white shadow-md transition hover:-translate-y-[1px] hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mt-gold)]/40 disabled:cursor-not-allowed disabled:opacity-60 [background:var(--mt-gradient-gold)]"
         }
       >
         {loading ? "Iniciando..." : label}

@@ -192,13 +192,15 @@ export async function requireLeader(): Promise<CurrentProfile> {
 
 type SubscriptionStatus =
   | "free"
+  | "pending"
   | "active"
   | "trialing"
   | "cancelled"
   | "expired"
   | "past_due"
   | "unpaid"
-  | "incomplete";
+  | "incomplete"
+  | "failed";
 
 type DbSubscriptionRow = {
   plan: string;
@@ -304,10 +306,13 @@ export async function getCurrentSubscription(profileId: string): Promise<Current
   const currentPeriodEnd =
     typeof subRow?.current_period_end === "string" ? subRow.current_period_end : null;
 
+  const normalizedStatus = status.trim().toLowerCase();
+  const effectivePlanCode = normalizedStatus === "pending" ? "free" : planCode;
+
   const { data: planRow } = await service
     .from("plans")
     .select("code,monthly_pre_sermon_limit")
-    .eq("code", planCode)
+    .eq("code", effectivePlanCode)
     .maybeSingle<DbPlanRow>();
 
   let monthlyPreSermonLimit =
@@ -315,14 +320,14 @@ export async function getCurrentSubscription(profileId: string): Promise<Current
       ? planRow.monthly_pre_sermon_limit
       : null;
 
-  const normalizedPlanCode = planCode.trim().toLowerCase();
-  if (planCode === "free" && monthlyPreSermonLimit == null) monthlyPreSermonLimit = 10;
+  const normalizedPlanCode = effectivePlanCode.trim().toLowerCase();
+  if (effectivePlanCode === "free" && monthlyPreSermonLimit == null) monthlyPreSermonLimit = 10;
   if ((normalizedPlanCode === "plano_basico" || normalizedPlanCode === "basic") && monthlyPreSermonLimit == null) {
     monthlyPreSermonLimit = 20;
   }
 
   return {
-    plan: planCode,
+    plan: effectivePlanCode,
     status,
     current_period_start: currentPeriodStart,
     current_period_end: currentPeriodEnd,

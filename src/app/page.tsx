@@ -112,49 +112,56 @@ export default async function HomePage() {
       </section>
 
       <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-[1fr_0.9fr] lg:items-center">
-          <div className="rounded-[32px] border border-slate-200/10 bg-white shadow-xl shadow-slate-900/5 p-8">
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[var(--mt-gold)]">Como funciona</p>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
-              Um fluxo organizado em três passos
-            </h2>
-            <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">
-              Crie no app offline, revise na área de líder e publique apenas quando desejar.
-              Cada etapa foi pensada para reduzir atrito e manter o foco no conteúdo.
-            </p>
-          </div>
+        <div className="rounded-[40px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-8 shadow-[0_24px_60px_-50px_rgba(0,0,0,0.7)] sm:p-10">
+          <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-start">
+            <div className="space-y-4">
+              <p className="inline-flex max-w-fit rounded-full bg-[var(--mt-gold)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--mt-gold)]">
+                Como funciona
+              </p>
+              <h2 className="text-3xl font-semibold tracking-tight text-[var(--mt-text)] sm:text-4xl">
+                Um fluxo organizado em quatro passos
+              </h2>
+              <p className="max-w-xl text-sm leading-7 text-[var(--mt-muted)] sm:text-base">
+                Crie no app offline, revise na área de líder e publique apenas quando desejar.
+                Cada etapa foi pensada para reduzir atrito e manter o foco no conteúdo.
+              </p>
+            </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {[
-              {
-                step: "1",
-                title: "Crie no app",
-                description: "Anote versículo, pontos e conclusão mesmo sem internet.",
-              },
-              {
-                step: "2",
-                title: "Revise no líder",
-                description: "Administre pré-sermões e acompanhe o progresso.",
-              },
-              {
-                step: "3",
-                title: "Publique quando quiser",
-                description: "Venda o conteúdo com URL própria e controle total.",
-              },
-              {
-                step: "4",
-                title: "Acompanhe resultados",
-                description: "Veja quantas pessoas acessaram sua mensagem.",
-              },
-            ].map((item) => (
-              <div key={item.step} className="rounded-[28px] border border-slate-200/10 bg-slate-50 p-6 shadow-sm">
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--mt-gold)]/10 text-lg font-semibold text-[var(--mt-gold)]"> 
-                  {item.step}
-                </span>
-                <h3 className="mt-5 text-xl font-semibold text-slate-900">{item.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-slate-600">{item.description}</p>
-              </div>
-            ))}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {[
+                {
+                  step: "1",
+                  title: "Crie no app",
+                  description: "Anote versículo, pontos e conclusão mesmo sem internet.",
+                },
+                {
+                  step: "2",
+                  title: "Revise no líder",
+                  description: "Administre pré-sermões e acompanhe o progresso.",
+                },
+                {
+                  step: "3",
+                  title: "Publique quando quiser",
+                  description: "Venda o conteúdo com URL própria e controle total.",
+                },
+                {
+                  step: "4",
+                  title: "Acompanhe resultados",
+                  description: "Veja quantas pessoas acessaram sua mensagem.",
+                },
+              ].map((item) => (
+                <div
+                  key={item.step}
+                  className="rounded-[28px] border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] p-6 shadow-sm"
+                >
+                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--mt-gold)]/10 text-lg font-semibold text-[var(--mt-gold)]">
+                    {item.step}
+                  </span>
+                  <h3 className="mt-5 text-xl font-semibold text-[var(--mt-text)]">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-[var(--mt-muted)]">{item.description}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

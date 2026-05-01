@@ -138,7 +138,6 @@ uso offline
 
 A plataforma web será:
 ferramenta principal de publicação e compartilhamento
-Responsável por:
 
 
 publicação online
@@ -157,6 +156,9 @@ compartilhamento por URL
 
 
 SEO e indexação no Google
+
+Complemento (nova capacidade):
+Além de receber publicações vindas do app, a plataforma web também permite que o líder escreva a mensagem completa dentro do fluxo de pré-sermões e publique diretamente no site, gerando uma página pública em `/mensagens/[slug]`.
 
 
 
@@ -490,6 +492,7 @@ compartilhamento direto
 F9. Área do Líder — Pré-sermões
 Objetivo
 Permitir que líderes criem e gerenciem pré-sermões com um código compartilhável (MT-XXXXX), para uso posterior no app Android.
+Além disso, permitir que o líder escreva a mensagem completa no pré-sermão e publique no site.
 Regras
 
 
@@ -518,6 +521,12 @@ copiar o código
 
 
 arquivar
+
+
+preencher mensagem completa (opcional)
+
+
+publicar no site (quando houver mensagem completa), gerando uma URL pública em `/mensagens/[slug]`
 
 
 Rotas (Web)
@@ -566,7 +575,6 @@ Resposta (200)
     "title": "...", 
     "mainVerse": "...", 
     "secondaryVerses": [], 
-    "notes": "...", 
     "leader": { 
       "name": "..." 
     }, 

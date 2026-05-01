@@ -24,6 +24,7 @@ type DbPlanRow = {
   code: string;
   is_active: boolean;
   price_in_cents: number;
+  abacatepay_product_id: string | null;
 };
 
 type DbSubscriptionRow = {
@@ -51,6 +52,12 @@ function getCheckoutUrlFromMetadata(metadata: unknown): string | null {
   const obj = asRecord(metadata);
   const url = obj ? getString(obj.checkoutUrl) : null;
   return url;
+}
+
+function getPendingPlanCodeFromMetadata(metadata: unknown): string | null {
+  const obj = asRecord(metadata);
+  const planCode = obj ? getString(obj.pendingPlanCode) : null;
+  return planCode;
 }
 
 function parseDbTimestamp(value: string | null): Date | null {
@@ -108,7 +115,7 @@ export async function POST(request: Request) {
 
   const { data: planRow } = await service
     .from("plans")
-    .select("code,is_active,price_in_cents")
+    .select("code,is_active,price_in_cents,abacatepay_product_id")
     .eq("code", planCode)
     .maybeSingle<DbPlanRow>();
 
@@ -118,7 +125,9 @@ export async function POST(request: Request) {
     return publicErrorResponse(400, "Plano gratuito não gera checkout.");
   }
 
-  const productId = getAbacatePayProductId(planRow.code);
+  const productId =
+    getString(planRow.abacatepay_product_id) ??
+    getAbacatePayProductId(planRow.code);
   if (!productId) return publicErrorResponse(500, "Produto de assinatura não configurado.");
 
   const { data: existingSub } = await service
@@ -137,14 +146,16 @@ export async function POST(request: Request) {
     const currentPlan = getString(existingSub.plan) ?? "free";
     const currentStatus = getString(existingSub.status)?.toLowerCase() ?? "free";
 
-    if ((currentStatus === "active" || currentStatus === "trialing") && currentPlan === planRow.code) {
-      return publicErrorResponse(409, "Você já possui este plano ativo.");
+    if (currentStatus === "active" || currentStatus === "trialing") {
+      if (currentPlan === planRow.code) return publicErrorResponse(409, "Você já possui este plano ativo.");
+      return publicErrorResponse(409, "Você já possui um plano ativo. Cancele antes de trocar de plano.");
     }
 
-    if (currentStatus === "pending" && currentPlan === planRow.code && updatedAt) {
+    if (currentStatus === "pending" && updatedAt) {
       const age = now.getTime() - updatedAt.getTime();
+      const pendingPlanCode = getPendingPlanCodeFromMetadata(existingSub.metadata);
       const url = getCheckoutUrlFromMetadata(existingSub.metadata);
-      if (age >= 0 && age <= pendingReuseWindowMs && url) {
+      if (age >= 0 && age <= pendingReuseWindowMs && pendingPlanCode === planRow.code && url) {
         return json({ success: true, checkoutUrl: url }, 200);
       }
     }
@@ -179,6 +190,8 @@ export async function POST(request: Request) {
   const returnUrl = "https://mensagem-transformadora-web.vercel.app/dashboard";
   const completionUrl = "https://mensagem-transformadora-web.vercel.app/dashboard?payment=success";
 
+  const checkoutExternalId = `${profileRow.id}:${planRow.code}:${Date.now()}`;
+
   let checkout;
   try {
     const abacateMetadataPlan = mapPlanForAbacatePayMetadata(planRow.code);
@@ -187,7 +200,7 @@ export async function POST(request: Request) {
       ...(customerId ? { customerId } : {}),
       returnUrl,
       completionUrl,
-      externalId: profileRow.id,
+      externalId: checkoutExternalId,
       metadata: {
         plan: abacateMetadataPlan,
         planCode: planRow.code,
@@ -215,20 +228,24 @@ export async function POST(request: Request) {
   const metadata = {
     ...(asRecord(existingSub?.metadata) ?? {}),
     project: "mensagem-transformadora",
-    planCode: planRow.code,
+    pendingPlanCode: planRow.code,
+    pendingCheckoutExternalId: checkoutExternalId,
     checkoutUrl: checkout.checkoutUrl,
   };
 
+  const existingPlan = getString(existingSub?.plan) ?? "free";
+  const existingStatus = getString(existingSub?.status)?.toLowerCase() ?? "free";
+  const planToPersist =
+    existingStatus === "active" || existingStatus === "trialing" ? existingPlan : "free";
   const patch = {
     provider: "abacatepay",
     provider_customer_id: customerId,
     provider_product_id: productId,
     provider_checkout_id: checkout.checkoutId,
     provider_subscription_id: checkout.subscriptionId,
-    plan: planRow.code,
+    plan: planToPersist,
     status: "pending",
     metadata,
-    current_period_start: now.toISOString(),
   };
 
   if (existingSub?.id) {

@@ -6,7 +6,6 @@ type DbPreSermonRow = {
   title: string;
   main_verse: string;
   secondary_verses: unknown;
-  notes: string | null;
   leader: { name: string } | null;
   church: { name: string } | null;
 };
@@ -39,7 +38,6 @@ export async function GET(request: Request) {
         title,
         main_verse,
         secondary_verses,
-        notes,
         leader:profiles!pre_sermons_leader_id_fkey(name),
         church:churches!pre_sermons_church_id_fkey(name)
       `,
@@ -62,7 +60,6 @@ export async function GET(request: Request) {
       title: data.title,
       mainVerse: data.main_verse,
       secondaryVerses: normalizeStringArray(data.secondary_verses),
-      notes: data.notes,
       leader: { name: data.leader?.name ?? "" },
       church: { name: data.church?.name ?? "" },
     },

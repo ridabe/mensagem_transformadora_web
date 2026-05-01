@@ -146,7 +146,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
       <div className="grid gap-8 lg:grid-cols-[1.35fr_0.65fr]">
         <article className="flex flex-col gap-6">
           {sermon.finalSummary ? (
-            <section className="rounded-[32px] border border-[var(--mt-border)] bg-white p-6 shadow-sm">
+            <section className="rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6 shadow-sm">
               <p className="text-sm uppercase tracking-[0.3em] text-[var(--mt-gold)]">Resumo rápido</p>
               <p className="mt-4 whitespace-pre-wrap text-base leading-7 text-[var(--mt-text)]">
                 {sermon.finalSummary}
@@ -173,7 +173,10 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
               </div>
               <div className="mt-5 grid gap-4">
                 {sermon.keyPoints.map((p) => (
-                  <div key={p.id} className="rounded-[28px] border border-[var(--mt-border)] bg-white p-5 shadow-sm">
+                  <div
+                    key={p.id}
+                    className="rounded-[28px] border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] p-5 shadow-sm"
+                  >
                     <p className="text-sm font-semibold text-[var(--mt-text)]">{p.title}</p>
                     <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--mt-muted)]">
                       {p.content}
@@ -202,7 +205,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
                 {sermon.highlightedPhrases.map((phrase) => (
                   <li
                     key={phrase}
-                    className="rounded-[28px] border border-[var(--mt-border)] bg-white p-4 text-sm text-[var(--mt-text)] shadow-sm"
+                    className="rounded-[28px] border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] p-4 text-sm text-[var(--mt-text)] shadow-sm"
                   >
                     “{phrase}”
                   </li>
@@ -254,7 +257,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
             </Link>
           </div>
 
-          <div className="rounded-[32px] border border-[var(--mt-border)] bg-white p-6 shadow-sm">
+          <div className="rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6 shadow-sm">
             <p className="text-sm font-semibold text-[var(--mt-text)]">Gostou desta mensagem?</p>
             <p className="mt-3 text-sm leading-6 text-[var(--mt-muted)]">
               Baixe o app Mensagem Transformadora e registre suas próprias mensagens offline. Publique no site apenas quando quiser.

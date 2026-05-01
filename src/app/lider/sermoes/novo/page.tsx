@@ -16,6 +16,10 @@ function normalizeOptionalText(value: string): string | null {
   return trimmed ? trimmed : null;
 }
 
+function toShareCode(value: unknown): string {
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
 function parseStatus(value: string): PreSermonStatus {
   return value === "draft" ? "draft" : "active";
 }
@@ -35,7 +39,31 @@ function extractMissingEnvFromError(err: unknown): string | null {
   return match?.[1]?.trim() ? match[1].trim() : null;
 }
 
+function getErrorText(err: unknown): string | null {
+  if (!err || typeof err !== "object") return null;
+  const message = "message" in err && typeof err.message === "string" ? err.message : null;
+  const details = "details" in err && typeof err.details === "string" ? err.details : null;
+  const hint = "hint" in err && typeof err.hint === "string" ? err.hint : null;
+  return message ?? details ?? hint ?? null;
+}
+
+function isMissingColumnError(err: unknown, column: string): boolean {
+  if (!err || typeof err !== "object") return false;
+  const code = "code" in err && typeof err.code === "string" ? err.code : null;
+  const text = (getErrorText(err) ?? "").toLowerCase();
+  const c = column.toLowerCase();
+  if (code === "42703" || code === "PGRST204") {
+    return text.includes(c) && (text.includes("does not exist") || text.includes("not exist") || text.includes("unknown"));
+  }
+  return text.includes(c) && (text.includes("does not exist") || text.includes("not exist"));
+}
+
 function getPreSermonLimitMessage(sp: Record<string, string | string[] | undefined> | undefined): string | null {
+  const raw = getString(sp, "reason")?.trim() ?? "";
+  return raw ? raw : null;
+}
+
+function getCreateErrorMessage(sp: Record<string, string | string[] | undefined> | undefined): string | null {
   const raw = getString(sp, "reason")?.trim() ?? "";
   return raw ? raw : null;
 }
@@ -66,6 +94,7 @@ export async function createPreSermonAction(formData: FormData) {
   const title = normalizeOptionalText(getFormString(formData, "title"));
   const mainVerse = normalizeOptionalText(getFormString(formData, "main_verse"));
   const notes = normalizeOptionalText(getFormString(formData, "notes"));
+  const fullSermon = normalizeOptionalText(getFormString(formData, "full_sermon"));
   const status = parseStatus(getFormString(formData, "status"));
   const secondaryVerses = parseSecondaryVerses(getFormString(formData, "secondary_verses"));
 
@@ -73,24 +102,41 @@ export async function createPreSermonAction(formData: FormData) {
   if (!mainVerse) redirect("/lider/sermoes/novo?error=main_verse");
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("pre_sermons")
-    .insert({
-      leader_id: profile.authUserId,
-      church_id: profile.churchId,
-      title,
-      main_verse: mainVerse,
-      secondary_verses: secondaryVerses,
-      notes,
-      status,
-    })
-    .select("id,share_code")
-    .single();
+  const basePayload = {
+    leader_id: profile.authUserId,
+    church_id: profile.churchId,
+    title,
+    main_verse: mainVerse,
+    secondary_verses: secondaryVerses,
+    notes,
+    status,
+  };
 
-  if (error || !data?.id) redirect("/lider/sermoes/novo?error=create");
+  const payload = fullSermon ? { ...basePayload, full_sermon: fullSermon } : basePayload;
 
-  const code = typeof data.share_code === "string" ? data.share_code : "";
-  redirect(`/lider/sermoes?saved=1&code=${encodeURIComponent(code)}`);
+  let insert = await supabase.from("pre_sermons").insert(payload).select("id,share_code").single();
+  if (insert.error && fullSermon && isMissingColumnError(insert.error, "full_sermon")) {
+    insert = await supabase.from("pre_sermons").insert(basePayload).select("id,share_code").single();
+    if (!insert.error && insert.data?.id) {
+      redirect(
+        `/lider/sermoes/${encodeURIComponent(String(insert.data.id))}/editar?created=1&code=${encodeURIComponent(
+          toShareCode(insert.data.share_code),
+        )}&warning=${encodeURIComponent(
+          "Sua mensagem foi salva, mas o banco ainda não está atualizado para armazenar a mensagem completa.",
+        )}`,
+      );
+    }
+  }
+
+  if (insert.error || !insert.data?.id) {
+    const details = getErrorText(insert.error) ?? "Não foi possível criar a mensagem.";
+    redirect(`/lider/sermoes/novo?error=create&reason=${encodeURIComponent(details)}`);
+  }
+
+  const code = toShareCode(insert.data.share_code);
+  redirect(
+    `/lider/sermoes/${encodeURIComponent(String(insert.data.id))}/editar?created=1&code=${encodeURIComponent(code)}`,
+  );
 }
 
 type LiderNovoSermoesPageProps = {
@@ -111,6 +157,7 @@ export default async function LiderNovoSermoesPage({ searchParams }: LiderNovoSe
   const sp = searchParams ? await searchParams : undefined;
   const error = getString(sp, "error");
   const limitReason = getPreSermonLimitMessage(sp);
+  const createReason = getCreateErrorMessage(sp);
 
   try {
     await createClient();
@@ -138,16 +185,20 @@ export default async function LiderNovoSermoesPage({ searchParams }: LiderNovoSe
           ? limitReason ??
             "Seu plano atingiu o limite de pré-sermões neste ciclo. Seu ciclo será renovado automaticamente na próxima data de renovação ou você pode fazer upgrade agora."
         : error === "create"
-          ? "Não foi possível criar o pré-sermão."
+          ? createReason ?? "Não foi possível criar a mensagem."
           : null;
 
   return (
     <main className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
-        <p className="text-sm text-[var(--mt-muted)]">Área do líder • Pré-sermões</p>
-        <h2 className="text-2xl font-semibold tracking-tight">Novo pré-sermão</h2>
+        <p className="text-sm text-[var(--mt-muted)]">Área do líder • Mensagens</p>
+        <h2 className="text-2xl font-semibold tracking-tight">Crie a mensagem</h2>
         <p className="text-sm leading-6 text-[var(--mt-muted)]">
-          O código MT-XXXXX é gerado automaticamente após salvar.
+          Crie aqui o esboço do sermão e disponibilize para o membro da igreja compartilhando o ID
+          único. Ele receberá no celular o título, o nome do pregador, o versículo principal e os
+          versículos secundários. Caso você deseje inserir toda a mensagem aqui, poderá clicar em
+          Publicar e, então, seu sermão irá para nossa página principal para que todos tenham acesso
+          à Palavra de forma completa.
         </p>
       </header>
 
@@ -198,6 +249,16 @@ export default async function LiderNovoSermoesPage({ searchParams }: LiderNovoSe
             rows={6}
             className="rounded-xl border border-[var(--mt-border)] bg-transparent px-4 py-3 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2"
             placeholder="Rascunho, ideias, estrutura…"
+          />
+        </label>
+
+        <label className="flex flex-col gap-2 text-sm">
+          <span className="font-semibold">Mensagem completa (opcional)</span>
+          <textarea
+            name="full_sermon"
+            rows={10}
+            className="rounded-xl border border-[var(--mt-border)] bg-transparent px-4 py-3 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2"
+            placeholder="Digite aqui a mensagem completa para publicar no site (opcional)."
           />
         </label>
 

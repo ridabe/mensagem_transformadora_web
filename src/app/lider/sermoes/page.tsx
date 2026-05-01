@@ -100,14 +100,14 @@ export default async function LiderSermoesPage({ searchParams }: LiderSermoesPag
     error === "id"
       ? "ID inválido."
       : error === "archive"
-        ? "Não foi possível arquivar o pré-sermão."
+        ? "Não foi possível arquivar a mensagem."
         : null;
 
   const infoMessage =
     saved === "1"
-      ? "Pré-sermão criado com sucesso."
+      ? "Mensagem criada com sucesso."
       : archived === "1"
-        ? "Pré-sermão arquivado."
+        ? "Mensagem arquivada."
         : null;
 
   const { data: rowsData, error: rowsError } = await supabase
@@ -121,17 +121,21 @@ export default async function LiderSermoesPage({ searchParams }: LiderSermoesPag
   return (
     <main className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
-        <p className="text-sm text-[var(--mt-muted)]">Área do líder • Pré-sermões</p>
-        <h2 className="text-2xl font-semibold tracking-tight">Seus pré-sermões</h2>
+        <p className="text-sm text-[var(--mt-muted)]">Área do líder • Mensagens</p>
+        <h2 className="text-2xl font-semibold tracking-tight">Suas mensagens</h2>
         <p className="text-sm leading-6 text-[var(--mt-muted)]">
-          Crie, edite, copie o código e arquive pré-sermões. Cada item fica visível apenas para você.
+          Crie aqui o esboço do sermão e disponibilize para o membro da igreja compartilhando o ID
+          único. Ele receberá no celular o título, o nome do pregador, o versículo principal e os
+          versículos secundários. Caso você deseje inserir toda a mensagem aqui, poderá clicar em
+          Publicar e, então, seu sermão irá para nossa página principal para que todos tenham acesso
+          à Palavra de forma completa.
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <Link
             href="/lider/sermoes/novo"
             className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--mt-navy)] px-5 text-sm font-semibold text-white hover:opacity-95"
           >
-            Novo pré-sermão
+            Crie a mensagem
           </Link>
         </div>
       </header>
@@ -156,23 +160,23 @@ export default async function LiderSermoesPage({ searchParams }: LiderSermoesPag
 
       {rowsError ? (
         <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
-          <h2 className="text-lg font-semibold tracking-tight">Pré-sermões</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Mensagens</h2>
           <p className="mt-2 text-sm text-[var(--mt-muted)]">
-            Não foi possível carregar sua lista de pré-sermões.
+            Não foi possível carregar sua lista de mensagens.
           </p>
         </div>
       ) : rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[var(--mt-border)] bg-[var(--mt-surface)] p-8 text-center">
-          <p className="text-sm font-medium">Nenhum pré-sermão ainda</p>
+          <p className="text-sm font-medium">Nenhuma mensagem ainda</p>
           <p className="mt-2 text-sm text-[var(--mt-muted)]">
-            Crie seu primeiro pré-sermão para gerar um código compartilhável.
+            Crie sua primeira mensagem para gerar um ID único compartilhável.
           </p>
           <div className="mt-5 flex justify-center">
             <Link
               href="/lider/sermoes/novo"
               className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--mt-navy)] px-5 text-sm font-semibold text-white hover:opacity-95"
             >
-              Criar pré-sermão
+              Crie a mensagem
             </Link>
           </div>
         </div>

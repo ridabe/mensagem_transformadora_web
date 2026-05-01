@@ -153,7 +153,8 @@ export async function getPublicSermons(
       { count: "exact" },
     )
     .eq("visibility", "public")
-    .eq("status", "published");
+    .eq("status", "published")
+    .eq("source", "web_admin");
 
   if (q) {
     const pattern = `%${q}%`;
@@ -226,6 +227,7 @@ export async function getPublicSermonBySlug(
     .eq("slug", slug)
     .eq("visibility", "public")
     .eq("status", "published")
+    .eq("source", "web_admin")
     .maybeSingle<DbPublicSermonRow>();
 
   if (error) throw new Error(error.message);

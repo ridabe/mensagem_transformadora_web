@@ -9,7 +9,7 @@ Este manual explica como usar o site público e a área administrativa (Admin), 
 O Mensagem Transformadora Web tem três espaços:
 
 - **Site público**: vitrine de mensagens publicadas (SEO, compartilhamento e leitura).
-- **Área do líder**: área privada para criação e gestão de pré-sermões (login obrigatório).
+- **Área do líder**: área privada para criação e gestão de pré-sermões, com opção de escrever a mensagem completa e publicar no site (login obrigatório).
 - **Admin**: área privada para gestão administrativa (login obrigatório).
 
 Nada é publicado automaticamente: uma mensagem só aparece no site público quando estiver **Publicada** e com **Visibilidade Pública**.
@@ -85,13 +85,15 @@ Pré-sermões são rascunhos estruturados com:
 - **Versículo principal**
 - **Versículos secundários** (opcional)
 - **Notas** (opcional)
+- **Mensagem completa** (opcional) — quando preenchida, pode ser publicada no site
 - **Status** (rascunho/ativo/arquivado)
 - **Código compartilhável** no formato `MT-XXXXX` (gerado automaticamente)
 
 Regras práticas:
 
 - Cada pré-sermão é visível apenas para o líder logado.
-- O código `MT-XXXXX` pode ser copiado para compartilhamento e uso no app Android.
+- O código `MT-XXXXX` pode ser copiado para compartilhamento e uso no app Android (o app consome um recorte do conteúdo, não a mensagem completa).
+- Quando a **Mensagem completa** está preenchida, o líder pode **Publicar** e gerar uma página pública completa em `/mensagens/[slug]`.
 
 ### 3.3 Listagem de pré-sermões (`/lider/sermoes`)
 
@@ -110,7 +112,8 @@ Passo a passo:
 1. Abra `/lider/sermoes/novo`.
 2. Preencha **Título** e **Versículo principal**.
 3. (Opcional) Adicione versículos secundários e notas.
-4. Clique em **Salvar**.
+4. (Opcional) Preencha **Mensagem completa** se quiser publicar no site.
+5. Clique em **Salvar**.
 
 Após salvar:
 
@@ -124,7 +127,14 @@ Na edição, você pode:
 - Atualizar campos do pré-sermão.
 - Alternar status entre **Rascunho** e **Ativo**.
 - Copiar o código `MT-XXXXX`.
+- Preencher a **Mensagem completa** (opcional).
+- **Publicar no site** (quando a mensagem completa estiver preenchida).
 - **Arquivar** (após arquivar, a edição fica bloqueada).
+
+Publicação no site:
+
+- Ao publicar, o sistema cria uma mensagem em `published_sermons` (visibilidade pública e status publicado) e redireciona para `/mensagens/[slug]`.
+- Depois de publicada, a tela de edição mostra o botão **Abrir no site**.
 
 ---
 
@@ -217,11 +227,11 @@ No topo do Admin existe o botão **Sair**, que encerra a sessão e volta para o 
 
 ---
 
-## 5) Publicação de mensagens (origem no app)
+## 5) Publicação de mensagens (origem no app e no pré-sermão)
 
 O fluxo esperado (produto):
 
-1. Usuário cria a mensagem no app (offline-first).
+1. Usuário cria a mensagem no app (offline-first) **ou** o líder escreve a mensagem completa no pré-sermão (web).
 2. Quando quiser, publica no site.
 3. A mensagem passa a ter:
    - `slug` e URL pública compartilhável
@@ -334,4 +344,6 @@ Checklist:
   - `/admin/mensagens/[id]`
 - API pública:
   - `/api/pre-sermons/by-code?code=MT-XXXXX`
+  - `/api/public/sermons`
+  - `/api/public/sermons/[slug]`
 

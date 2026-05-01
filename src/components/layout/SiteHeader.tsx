@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { getCurrentProfile } from "@/lib/auth/profiles";
@@ -20,7 +19,7 @@ export async function SiteHeader() {
           <svg
             viewBox="0 0 1200 400"
             xmlns="http://www.w3.org/2000/svg"
-            className="h-10 w-auto"
+            className="h-14 w-auto md:h-16"
           >
             {/* Ícone: Livro com Cruz e Lápis */}
             <g id="book-icon">
@@ -165,7 +164,7 @@ export async function SiteHeader() {
                 fontFamily="system-ui, -apple-system, 'Segoe UI', sans-serif"
                 fontSize="72"
                 fontWeight="700"
-                fill="#1A2744"
+                fill="var(--mt-white)"
                 letterSpacing="-1"
               >
                 Mensagem
@@ -187,12 +186,12 @@ export async function SiteHeader() {
           </svg>
         </Link>
 
-        <nav className="hidden items-center gap-6 text-sm text-[var(--mt-muted)] md:flex">
+        <nav className="hidden items-center gap-4 text-sm text-[var(--mt-muted)] md:flex">
+          <Link href="/" className="hover:text-[var(--mt-text)]">
+            Home
+          </Link>
           <Link href="/mensagens" className="hover:text-[var(--mt-text)]">
             Mensagens
-          </Link>
-          <Link href="/sobre" className="hover:text-[var(--mt-text)]">
-            Sobre
           </Link>
           {isLoggedIn ? (
             <Link
@@ -202,14 +201,7 @@ export async function SiteHeader() {
               Minha área
             </Link>
           ) : (
-            <>
-              <Link href="/login" className="hover:text-[var(--mt-text)]">
-                Entrar
-              </Link>
-              <Link href="/cadastro" className="hover:text-[var(--mt-text)]">
-                Cadastro
-              </Link>
-            </>
+            <span className="text-[var(--mt-muted)]"> </span>
           )}
         </nav>
 
@@ -243,26 +235,31 @@ export async function SiteHeader() {
               )}
             </>
           ) : (
-            <>
-              <Link
-                href="/login"
-                className="hidden h-10 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5 md:inline-flex"
-              >
-                Entrar
-              </Link>
-              <Link
-                href="/cadastro"
-                className="hidden h-10 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5 md:inline-flex"
-              >
-                Cadastro
-              </Link>
-            </>
+            <details className="relative">
+              <summary className="list-none inline-flex h-10 cursor-pointer items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5">
+                Acessar
+              </summary>
+              <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] shadow-lg">
+                <Link
+                  href="/login"
+                  className="block px-4 py-3 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
+                >
+                  Entrar
+                </Link>
+                <Link
+                  href="/cadastro"
+                  className="block px-4 py-3 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
+                >
+                  Cadastro
+                </Link>
+              </div>
+            </details>
           )}
           <Link
-            href="/mensagens"
-            className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
+            href="/sobre"
+            className="hidden h-10 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5 md:inline-flex"
           >
-            Ver mensagens
+            Sobre
           </Link>
           <a
             href={PLAY_STORE_URL}
