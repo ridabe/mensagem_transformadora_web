@@ -23,6 +23,11 @@ export default function ForgotPasswordPage() {
     return new URL(window.location.href).searchParams.get("debug") === "1";
   }, []);
 
+  const hasSupabaseUrl = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const hasSupabaseKey = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  );
+
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -40,6 +45,13 @@ export default function ForgotPasswordPage() {
 
     const safeEmail = email.trim();
     try {
+      if (debug) {
+        console.info("[forgot-password] env:", {
+          hasSupabaseUrl,
+          hasSupabaseKey,
+          hasSiteUrl: Boolean(process.env.NEXT_PUBLIC_SITE_URL),
+        });
+      }
       const supabase = createClient();
       console.info("[forgot-password] redirectTo:", `${siteUrl}/auth/reset-password`);
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(safeEmail, {
@@ -100,6 +112,16 @@ export default function ForgotPasswordPage() {
           </p>
         </div>
 
+        {debug ? (
+          <div className="mb-6 p-4 rounded-2xl bg-[var(--mt-navy)]/20 border border-[var(--mt-border)] text-[var(--mt-blue-light)]">
+            <p className="text-xs break-words">
+              env NEXT_PUBLIC_SUPABASE_URL: {hasSupabaseUrl ? "OK" : "AUSENTE"}
+              {" • "}KEY: {hasSupabaseKey ? "OK" : "AUSENTE"}
+            </p>
+            <p className="mt-1 text-xs break-words">redirectTo: {siteUrl}/auth/reset-password</p>
+          </div>
+        ) : null}
+
         {sent ? (
           <div className="mb-6 p-4 rounded-2xl bg-[var(--mt-gold)]/15 border border-[var(--mt-gold)]/30 text-[var(--mt-gold)] animate-slide-in-right">
             <div className="flex items-center gap-3">
@@ -134,7 +156,8 @@ export default function ForgotPasswordPage() {
                 ) : null}
                 {debug ? (
                   <p className="mt-2 text-xs text-red-200/80 break-words">
-                    redirectTo: {siteUrl}/auth/reset-password
+                    env NEXT_PUBLIC_SUPABASE_URL: {hasSupabaseUrl ? "OK" : "AUSENTE"}
+                    {" • "}KEY: {hasSupabaseKey ? "OK" : "AUSENTE"}
                   </p>
                 ) : null}
               </div>
