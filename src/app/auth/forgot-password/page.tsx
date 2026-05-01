@@ -18,10 +18,16 @@ export default function ForgotPasswordPage() {
     return raw && raw.trim() ? normalizeSiteUrl(raw) : FALLBACK_SITE_URL;
   }, []);
 
+  const debug = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return new URL(window.location.href).searchParams.get("debug") === "1";
+  }, []);
+
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [debugDetails, setDebugDetails] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -30,6 +36,7 @@ export default function ForgotPasswordPage() {
     setPending(true);
     setError(null);
     setSent(false);
+    setDebugDetails(null);
 
     const safeEmail = email.trim();
     try {
@@ -43,7 +50,13 @@ export default function ForgotPasswordPage() {
     } catch (err) {
       if (err && typeof err === "object" && "message" in err && typeof err.message === "string") {
         console.error("[forgot-password] resetPasswordForEmail failed:", err.message);
-        if (/redirect/i.test(err.message) || /url/i.test(err.message)) {
+        if (debug) setDebugDetails(err.message);
+        if (/Variável de ambiente ausente:/i.test(err.message)) {
+          setError("Supabase não está configurado no ambiente.");
+          return;
+        }
+
+        if (/redirect/i.test(err.message) || /not allowed/i.test(err.message)) {
           setError(
             "Não foi possível enviar o e-mail. Verifique a configuração de URL do site no Supabase.",
           );
@@ -51,6 +64,7 @@ export default function ForgotPasswordPage() {
         }
       } else {
         console.error("[forgot-password] resetPasswordForEmail failed:", err);
+        if (debug) setDebugDetails("Erro desconhecido no cliente.");
       }
 
       setError("Não foi possível enviar o e-mail. Verifique o endereço informado.");
@@ -113,7 +127,17 @@ export default function ForgotPasswordPage() {
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <p className="text-sm font-medium">{error}</p>
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{error}</p>
+                {debug && debugDetails ? (
+                  <p className="mt-1 text-xs text-red-200/80 break-words">{debugDetails}</p>
+                ) : null}
+                {debug ? (
+                  <p className="mt-2 text-xs text-red-200/80 break-words">
+                    redirectTo: {siteUrl}/auth/reset-password
+                  </p>
+                ) : null}
+              </div>
             </div>
           </div>
         ) : null}
