@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { requireLeader } from "@/lib/auth/profiles";
 import { buildSlugCandidates } from "@/app/api/_shared/slug";
+import { formatLeaderDisplayName } from "@/lib/format";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { CopyShareCodeButton } from "../../copy-share-code-button";
 
@@ -216,6 +217,7 @@ export async function publishPreSermonAction(formData: FormData) {
   const churchName = getString(churchRow?.name) ?? "Igreja";
   const sermonDate = formatIsoDateOnly(new Date());
   const finalSummary = buildFinalSummary({ notes: row.notes, fullSermon });
+  const leaderDisplayName = formatLeaderDisplayName(profile.ministryTitle, profile.name) || profile.name;
 
   const candidates = buildSlugCandidates(row.title);
   let created: { id: string; slug: string } | null = null;
@@ -224,8 +226,8 @@ export async function publishPreSermonAction(formData: FormData) {
     const payload = {
       user_id: profile.authUserId,
       local_sermon_id: null,
-      user_name: profile.name,
-      preacher_name: profile.name,
+      user_name: leaderDisplayName,
+      preacher_name: leaderDisplayName,
       church_name: churchName,
       sermon_date: sermonDate,
       sermon_time: null,

@@ -2,8 +2,13 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { logout } from "@/app/login/actions";
+import { requireLeader } from "@/lib/auth/profiles";
+import { formatLeaderDisplayName } from "@/lib/format";
 
-export default function LiderLayout({ children }: { children: ReactNode }) {
+export default async function LiderLayout({ children }: { children: ReactNode }) {
+  const profile = await requireLeader();
+  const leaderName = formatLeaderDisplayName(profile.ministryTitle, profile.name);
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8">
       <header className="flex flex-col gap-2 rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -12,6 +17,11 @@ export default function LiderLayout({ children }: { children: ReactNode }) {
           <h1 className="text-lg font-semibold tracking-tight">
             Mensagem Transformadora
           </h1>
+          {leaderName ? (
+            <p className="mt-1 text-sm font-semibold text-[var(--mt-gold)]">
+              Seja bem-vindo, {leaderName}
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <nav className="flex flex-wrap items-center gap-3 text-sm">

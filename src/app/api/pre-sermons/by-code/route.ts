@@ -1,4 +1,5 @@
 import { json, publicErrorResponse } from "@/app/api/_shared/responses";
+import { formatLeaderDisplayName } from "@/lib/format";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 
 type DbPreSermonRow = {
@@ -6,7 +7,7 @@ type DbPreSermonRow = {
   title: string;
   main_verse: string;
   secondary_verses: unknown;
-  leader: { name: string } | null;
+  leader: { display_name?: string | null; name?: string | null; ministry_title?: string | null } | null;
   church: { name: string } | null;
 };
 
@@ -38,7 +39,7 @@ export async function GET(request: Request) {
         title,
         main_verse,
         secondary_verses,
-        leader:profiles!pre_sermons_leader_id_fkey(name),
+        leader:profiles!pre_sermons_leader_id_fkey(display_name,name,ministry_title),
         church:churches!pre_sermons_church_id_fkey(name)
       `,
     )
@@ -53,6 +54,9 @@ export async function GET(request: Request) {
 
   if (!data) return publicErrorResponse(404, "Pré-sermão não encontrado.");
 
+  const leaderBaseName = (data.leader?.display_name ?? data.leader?.name ?? "").trim();
+  const leaderName = formatLeaderDisplayName(data.leader?.ministry_title ?? null, leaderBaseName);
+
   return json({
     success: true,
     sermon: {
@@ -60,7 +64,7 @@ export async function GET(request: Request) {
       title: data.title,
       mainVerse: data.main_verse,
       secondaryVerses: normalizeStringArray(data.secondary_verses),
-      leader: { name: data.leader?.name ?? "" },
+      leader: { name: leaderName },
       church: { name: data.church?.name ?? "" },
     },
   });

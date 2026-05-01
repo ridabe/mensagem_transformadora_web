@@ -45,7 +45,9 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
   }
 
   const errorMessage =
-    error === "name"
+    error === "ministry_title"
+      ? "Selecione sua função ministerial."
+      : error === "name"
       ? "Informe seu nome completo (mínimo 3 caracteres)."
       : error === "email"
         ? "Informe um e-mail válido."
@@ -109,6 +111,30 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
           className="bg-[var(--mt-blue-medium)] rounded-3xl shadow-xl shadow-black/5 p-8 border border-[var(--mt-border)] animate-fade-in-up stagger-2"
         >
           <div className="grid gap-6">
+            <div>
+              <label htmlFor="ministry_title" className="form-label">
+                Função ministerial
+              </label>
+              <select
+                id="ministry_title"
+                name="ministry_title"
+                required
+                className="form-input w-full"
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  Selecione sua função
+                </option>
+                <option value="pastor">Pr. — Pastor</option>
+                <option value="diacono">Diácono</option>
+                <option value="bispo">Bispo</option>
+                <option value="apostolo">Apóstolo</option>
+                <option value="missionario">Missionário</option>
+                <option value="pregador">Pregador</option>
+                <option value="lider">Liderr</option>
+              </select>
+            </div>
+
             <div className="grid gap-6 md:grid-cols-2">
               <div>
                 <label htmlFor="name" className="form-label">

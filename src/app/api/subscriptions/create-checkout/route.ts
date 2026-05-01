@@ -16,6 +16,7 @@ type DbProfileRow = {
   role: string;
   status: string;
   name: string;
+  display_name?: string | null;
   email: string;
   church_id: string | null;
 };
@@ -101,7 +102,7 @@ export async function POST(request: Request) {
   const service = createServiceRoleClient();
   const { data: profileRow } = await service
     .from("profiles")
-    .select("id,auth_user_id,role,status,name,email,church_id")
+    .select("id,auth_user_id,role,status,name,display_name,email,church_id")
     .eq("auth_user_id", userId)
     .maybeSingle<DbProfileRow>();
 
@@ -164,9 +165,10 @@ export async function POST(request: Request) {
   let customerId = existingSub?.provider_customer_id ?? null;
   if (!customerId) {
     try {
+      const customerName = getString(profileRow.display_name) ?? profileRow.name;
       const created = await createAbacatePayCustomer({
         email: profileRow.email,
-        name: profileRow.name,
+        name: customerName,
         metadata: {
           project: "mensagem-transformadora",
           profileId: profileRow.id,
