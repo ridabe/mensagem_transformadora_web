@@ -317,7 +317,6 @@ Checklist:
 ### 8.4 Página pública da mensagem “não encontrada”
 
 Checklist:
-
 - o `slug` é o mesmo do registro?
 - a mensagem está com `visibility = public` e `status = published`?
 
