@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { requireLeader } from "@/lib/auth/profiles";
 import { buildSlugCandidates } from "@/app/api/_shared/slug";
 import { formatLeaderDisplayName } from "@/lib/format";
+import { validatePreSermonContent } from "@/lib/moderation/badWords";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { CopyShareCodeButton } from "../../copy-share-code-button";
 
@@ -219,6 +220,22 @@ export async function publishPreSermonAction(formData: FormData) {
   const finalSummary = buildFinalSummary({ notes: row.notes, fullSermon });
   const leaderDisplayName = formatLeaderDisplayName(profile.ministryTitle, profile.name) || profile.name;
 
+  const moderation = validatePreSermonContent({
+    title: row.title,
+    main_verse: row.main_verse,
+    secondary_verses: Array.isArray(row.secondary_verses) ? row.secondary_verses : [],
+    notes: row.notes ?? "",
+    full_sermon: fullSermon,
+    final_summary: finalSummary ?? "",
+  });
+
+  if (!moderation.valid) {
+    const blockedFields = moderation.blockedFields.length ? moderation.blockedFields.join(",") : "";
+    redirect(
+      `/lider/sermoes/${encodeURIComponent(id)}/editar?error=moderation&blockedFields=${encodeURIComponent(blockedFields)}`,
+    );
+  }
+
   const candidates = buildSlugCandidates(row.title);
   let created: { id: string; slug: string } | null = null;
 
@@ -327,6 +344,13 @@ export default async function LiderEditarSermoesPage({ params, searchParams }: E
   const saved = getSearchParam(sp, "saved");
   const created = getSearchParam(sp, "created");
   const warning = getSearchParam(sp, "warning");
+  const blockedFieldsRaw = getSearchParam(sp, "blockedFields") ?? "";
+  const blockedFields = new Set(
+    blockedFieldsRaw
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean),
+  );
 
   try {
     await createClient();
@@ -406,6 +430,8 @@ export default async function LiderEditarSermoesPage({ params, searchParams }: E
               ? "Não foi possível preparar a publicação."
               : error === "publish_create"
                 ? "Não foi possível publicar o sermão no site."
+                : error === "moderation"
+                  ? "Encontramos termos inadequados em alguns campos do pré-sermão. Revise o conteúdo antes de publicar."
             : null;
 
   const infoMessage =
@@ -419,6 +445,8 @@ export default async function LiderEditarSermoesPage({ params, searchParams }: E
 
   const secondaryVersesText = stringifySecondaryVerses(row.secondary_verses);
   const publishedSlug = getString(row.published_slug);
+  const fieldClass = (isBlocked: boolean, base: string) =>
+    isBlocked ? `${base} border-red-500 ring-red-500 focus:ring-2` : base;
 
   return (
     <main className="flex flex-col gap-6">
@@ -489,7 +517,10 @@ export default async function LiderEditarSermoesPage({ params, searchParams }: E
             required
             defaultValue={row.title}
             disabled={isArchived}
-            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2 disabled:opacity-60"
+            className={fieldClass(
+              blockedFields.has("title"),
+              "h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2 disabled:opacity-60",
+            )}
           />
         </label>
 
@@ -500,7 +531,10 @@ export default async function LiderEditarSermoesPage({ params, searchParams }: E
             required
             defaultValue={row.main_verse}
             disabled={isArchived}
-            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2 disabled:opacity-60"
+            className={fieldClass(
+              blockedFields.has("main_verse"),
+              "h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2 disabled:opacity-60",
+            )}
           />
         </label>
 
@@ -511,7 +545,10 @@ export default async function LiderEditarSermoesPage({ params, searchParams }: E
             rows={4}
             defaultValue={secondaryVersesText}
             disabled={isArchived}
-            className="rounded-xl border border-[var(--mt-border)] bg-transparent px-4 py-3 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2 disabled:opacity-60"
+            className={fieldClass(
+              blockedFields.has("secondary_verses"),
+              "rounded-xl border border-[var(--mt-border)] bg-transparent px-4 py-3 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2 disabled:opacity-60",
+            )}
           />
         </label>
 
@@ -522,7 +559,10 @@ export default async function LiderEditarSermoesPage({ params, searchParams }: E
             rows={6}
             defaultValue={row.notes ?? ""}
             disabled={isArchived}
-            className="rounded-xl border border-[var(--mt-border)] bg-transparent px-4 py-3 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2 disabled:opacity-60"
+            className={fieldClass(
+              blockedFields.has("notes"),
+              "rounded-xl border border-[var(--mt-border)] bg-transparent px-4 py-3 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2 disabled:opacity-60",
+            )}
           />
         </label>
 
@@ -533,7 +573,10 @@ export default async function LiderEditarSermoesPage({ params, searchParams }: E
             rows={12}
             defaultValue={row.full_sermon ?? ""}
             disabled={isArchived}
-            className="rounded-xl border border-[var(--mt-border)] bg-transparent px-4 py-3 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2 disabled:opacity-60"
+            className={fieldClass(
+              blockedFields.has("full_sermon"),
+              "rounded-xl border border-[var(--mt-border)] bg-transparent px-4 py-3 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2 disabled:opacity-60",
+            )}
             placeholder="Digite aqui a mensagem completa para publicar no site (opcional)."
           />
         </label>

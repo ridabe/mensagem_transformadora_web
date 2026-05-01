@@ -56,6 +56,16 @@ Isso reforça confiança.
 
 ---
 
+## 2.6 Moderação na publicação de pré-sermões (web)
+
+Ao publicar um pré-sermão para a página pública, o sistema deve validar termos proibidos (badwords). Se houver termos inadequados:
+
+* exibir mensagem clara orientando a revisar o conteúdo;
+* destacar os campos apontados como problemáticos;
+* não bloquear salvamento/edição em rascunho (apenas a publicação).
+
+---
+
 ## 2.4 Mobile First + Desktop Premium
 
 A experiência deve ser excelente em:
