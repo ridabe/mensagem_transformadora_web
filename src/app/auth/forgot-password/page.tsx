@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState, type FormEvent } from "react";
 
-import { createClient } from "@/lib/supabase/client";
+import { createClient, SUPABASE_BROWSER_CLIENT_SOURCE } from "@/lib/supabase/client";
+import { getSupabasePublicEnvStatus } from "@/lib/supabase/env";
 
 const FALLBACK_SITE_URL = "https://mensagem-transformadora-web.vercel.app";
 
@@ -46,6 +47,8 @@ export default function ForgotPasswordPage() {
     const safeEmail = email.trim();
     try {
       if (debug) {
+        console.info("[forgot-password] supabase client source:", SUPABASE_BROWSER_CLIENT_SOURCE);
+        console.info("[forgot-password] getSupabasePublicEnvStatus:", getSupabasePublicEnvStatus());
         console.info("[forgot-password] env:", {
           hasSupabaseUrl,
           hasSupabaseKey,
