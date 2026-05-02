@@ -4,6 +4,7 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { getCurrentSubscription, getCurrentUsage, requireLeader } from "@/lib/auth/profiles";
 import { formatPtBrDate } from "@/lib/format";
 import { CreateCheckoutButton } from "./create-checkout-button";
+import { CancelSubscriptionButton } from "./cancel-subscription-button";
 
 type PlanRow = {
   code: string;
@@ -123,6 +124,7 @@ function getEffectiveLimit(input: {
   status: string;
   monthly_pre_sermon_limit: number | null;
   current_period_end: string | null;
+  cancelled_at: string | null;
 }): { kind: "unlimited" } | { kind: "limited"; limit: number } {
   const plan = input.plan?.trim() ? input.plan.trim() : "free";
   const status = normalizeSubscriptionStatus(input.status);
@@ -151,6 +153,26 @@ function getEffectiveLimit(input: {
         return { kind: "limited", limit: 10 };
       }
     }
+  }
+
+  if (status === "cancelled") {
+    if (isPaid && paidLimit != null) {
+      const endDate = input.current_period_end ? new Date(input.current_period_end) : null;
+      const endOk = endDate && Number.isFinite(endDate.getTime()) ? endDate : null;
+      if (endOk && Date.now() <= endOk.getTime()) return { kind: "limited", limit: paidLimit };
+
+      const cancelledDate = input.cancelled_at ? new Date(input.cancelled_at) : null;
+      const cancelledOk =
+        cancelledDate && Number.isFinite(cancelledDate.getTime()) ? cancelledDate : null;
+      const graceDays = Number.parseInt(process.env.MT_PAST_DUE_GRACE_DAYS?.trim() || "", 10);
+      const safeGraceDays = Number.isFinite(graceDays) && graceDays >= 0 ? graceDays : 3;
+      if (cancelledOk) {
+        const graceEndMs = cancelledOk.getTime() + safeGraceDays * 24 * 60 * 60 * 1000;
+        if (Date.now() <= graceEndMs) return { kind: "limited", limit: paidLimit };
+      }
+    }
+
+    return { kind: "limited", limit: 10 };
   }
 
   if (isPaid) return { kind: "limited", limit: 10 };
@@ -217,12 +239,18 @@ export default async function LiderAssinaturaPage() {
   ]);
 
   const status = normalizeSubscriptionStatus(String(subscription.status || "free"));
+  const showCancelButton = status === "active" || status === "trialing" || status === "paid";
   const plans = (plansResult.data ?? []) as PlanRow[];
   const plansByCode = new Map<string, PlanRow>();
   for (const p of plans) plansByCode.set(p.code, p);
 
   const currentPlan = plansByCode.get(subscription.plan) ?? null;
-  const currentPlanLabel = currentPlan?.name ?? (subscription.plan === "free" ? "Gratuito" : subscription.plan);
+  const baseCurrentPlanLabel =
+    currentPlan?.name ?? (subscription.plan === "free" ? "Gratuito" : subscription.plan);
+  const currentPlanLabel =
+    status === "cancelled" && subscription.plan !== "free"
+      ? `${baseCurrentPlanLabel} (cancelado)`
+      : baseCurrentPlanLabel;
   const statusLabel = getStatusLabel(String(subscription.status || "free"));
 
   const rawMetadata = rawSubscriptionResult.data?.metadata ?? null;
@@ -235,6 +263,7 @@ export default async function LiderAssinaturaPage() {
     status,
     monthly_pre_sermon_limit: subscription.monthly_pre_sermon_limit,
     current_period_end: subscription.current_period_end,
+    cancelled_at: subscription.cancelled_at,
   });
 
   const used = usage.used ?? 0;
@@ -302,12 +331,24 @@ export default async function LiderAssinaturaPage() {
           <div className="flex flex-col gap-1">
             <p className="text-sm text-[var(--mt-muted)]">Plano atual</p>
             <p className="text-lg font-semibold tracking-tight">{currentPlanLabel}</p>
+            {status === "cancelled" ? (
+              <p className="mt-1 text-xs text-[var(--mt-muted)]">
+                {subscription.monthly_pre_sermon_limit == null
+                  ? "Plano ilimitado cancelado: seu limite volta para 10 pré-sermões por ciclo."
+                  : nextRenewal
+                    ? `Assinatura cancelada: você mantém seu limite até ${nextRenewalLabel} (ou por até 3 dias) e depois volta para 10.`
+                    : "Assinatura cancelada: você mantém seu limite até o fim do período atual (ou por até 3 dias) e depois volta para 10."}
+              </p>
+            ) : null}
           </div>
           <div className="flex flex-col gap-1 sm:items-end">
             <p className="text-sm text-[var(--mt-muted)]">Status</p>
             <span className="inline-flex items-center rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-3 py-1 text-sm font-semibold">
               {statusLabel}
             </span>
+            {showCancelButton ? (
+              <CancelSubscriptionButton className="mt-3 w-full sm:mt-2 sm:w-auto" />
+            ) : null}
           </div>
         </div>
 

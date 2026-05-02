@@ -25,6 +25,8 @@ type CreateSubscriptionCheckoutResult = {
   checkoutUrl: string;
 };
 
+type CancelSubscriptionResult = Record<string, unknown>;
+
 class AbacatePayHttpError extends Error {
   status: number;
   data: unknown;
@@ -294,4 +296,35 @@ export async function createAbacatePaySubscriptionCheckout(payload: {
   const subscriptionId = pickFirstString(data, ["subscriptionId", "subscription_id", "subId"]);
 
   return { checkoutId, subscriptionId, checkoutUrl };
+}
+
+export async function cancelAbacatePaySubscription(subscriptionId: string): Promise<CancelSubscriptionResult> {
+  const id = subscriptionId?.trim() ? subscriptionId.trim() : "";
+  if (!id) throw new Error("subscriptionId é obrigatório para cancelar assinatura.");
+
+  const result = await fetchAbacatePay("/v2/subscriptions/cancel", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+
+  if (!result.ok) {
+    throw new AbacatePayHttpError({
+      status: result.status,
+      data: result.data,
+      message: `AbacatePay retornou HTTP ${result.status}`,
+      providerMessage: getProviderErrorMessage(result.data),
+    });
+  }
+
+  const root = asRecord(result.data);
+  if (!root) throw new Error("Resposta inválida da AbacatePay.");
+
+  if ("success" in root && root.success === false) {
+    const providerMessage = getProviderErrorMessage(result.data);
+    throw new Error(providerMessage ?? "AbacatePay não conseguiu cancelar a assinatura.");
+  }
+
+  const data = asRecord(root.data);
+  return data ?? root;
 }

@@ -461,7 +461,6 @@ export async function POST(request: Request) {
 
       const patch: Record<string, unknown> = {
         status: "cancelled",
-        plan: "free",
         cancelled_at: cancelledAt.toISOString(),
         metadata: {
           ...mergedMetadata,
