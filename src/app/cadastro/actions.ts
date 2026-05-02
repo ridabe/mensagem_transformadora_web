@@ -65,6 +65,9 @@ export async function signup(formData: FormData) {
     redirect(url);
   }
 
+  const termsAccepted = formData.get("terms");
+  if (termsAccepted !== "on") redirect("/cadastro?error=terms");
+
   const name = getString(formData, "name").trim();
   const email = getString(formData, "email").trim();
   const password = getString(formData, "password");
