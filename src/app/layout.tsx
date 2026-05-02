@@ -22,6 +22,13 @@ export const metadata: Metadata = {
   },
   description:
     "Publique, compartilhe e organize online mensagens cristãs criadas no app Mensagem Transformadora. Nada é publicado automaticamente.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", type: "image/x-icon" },
+      { url: "/logo.svg", type: "image/svg+xml" },
+    ],
+    shortcut: ["/favicon.ico"],
+  },
 };
 
 export default function RootLayout({
