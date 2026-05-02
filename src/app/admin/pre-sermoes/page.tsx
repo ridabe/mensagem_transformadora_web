@@ -193,7 +193,7 @@ export default async function AdminPreSermoesPage({ searchParams }: AdminPreSerm
           <select
             name="status"
             defaultValue={statusFilter}
-            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2"
+            className="h-11 rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm text-[var(--mt-text)] outline-none ring-[var(--mt-navy)] focus:ring-2 [color-scheme:dark]"
           >
             <option value="all">Todos</option>
             <option value="active">Ativo</option>

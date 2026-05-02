@@ -53,6 +53,8 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
         ? "Informe um e-mail válido."
         : error === "password"
           ? "Informe uma senha com pelo menos 6 caracteres."
+          : error === "terms"
+            ? "Você precisa aceitar os Termos de Uso e a Política de Privacidade."
           : error === "church"
             ? "Selecione uma igreja válida."
           : error === "signup"
@@ -212,6 +214,35 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
               {churchesError ? (
                 <p className="text-xs text-red-600 dark:text-red-400 mt-2">{churchesError}</p>
               ) : null}
+            </div>
+
+            <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-blue-medium)]/30 p-4">
+              <div className="flex items-start gap-3">
+                <input
+                  id="terms"
+                  name="terms"
+                  type="checkbox"
+                  required
+                  className="mt-1 h-4 w-4 rounded border-[var(--mt-border)] bg-transparent text-[var(--mt-gold)]"
+                />
+                <label htmlFor="terms" className="text-sm leading-6 text-[var(--mt-blue-light)]">
+                  Li e aceito os{" "}
+                  <Link
+                    href="/termos"
+                    className="font-semibold text-[var(--mt-gold)] hover:text-[var(--mt-white)] transition-colors duration-200"
+                  >
+                    Termos de Uso
+                  </Link>{" "}
+                  e a{" "}
+                  <Link
+                    href="/privacidade"
+                    className="font-semibold text-[var(--mt-gold)] hover:text-[var(--mt-white)] transition-colors duration-200"
+                  >
+                    Política de Privacidade
+                  </Link>
+                  .
+                </label>
+              </div>
             </div>
 
             <div className="pt-2">

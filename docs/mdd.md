@@ -21,9 +21,13 @@ UUID
 3. Entidades Principais
 auth.users
 profiles
+pre_sermons
 published_sermons
 sermon_view_logs
 publication_events
+
+Regras:
+- Pré-sermões só podem ser publicados na página pública (gerando um registro em `published_sermons`) se passarem pela moderação de termos proibidos (badwords) no fluxo web.
 4. Diagrama Conceitual
 auth.users
    |

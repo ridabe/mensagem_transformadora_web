@@ -22,6 +22,7 @@ Content-Type: application/json
 - Datas devem ser enviadas em `YYYY-MM-DD` (`sermon_date`).
 - Campos JSON devem ser enviados como JSON (arrays/objetos).
 - A publicação é **explícita**: nada é publicado automaticamente. Chamar a API é uma ação de publicação/gestão.
+- No fluxo web de publicação de **pré-sermões** (Área do Líder), a publicação pública só é permitida se o conteúdo passar por uma moderação de termos proibidos (badwords). Caso contrário, a publicação é bloqueada e o pré-sermão permanece inalterado.
 
 ## Tipos (referência)
 

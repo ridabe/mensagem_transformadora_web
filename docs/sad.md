@@ -25,6 +25,10 @@ Nenhuma mensagem deve ser enviada para a web sem ação direta do usuário.
 O usuário deve clicar em:
 
 Publicar no site
+
+3.2.1 Moderação (pré-sermões no fluxo web)
+
+Pré-sermões só podem ser publicados na página pública se o conteúdo passar por uma moderação de termos proibidos (badwords). Se a moderação bloquear, a publicação não acontece e o pré-sermão permanece como rascunho/inativo.
 3.3 Separação de responsabilidades
 App Android
 - criar mensagens
