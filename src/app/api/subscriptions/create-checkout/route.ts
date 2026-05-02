@@ -147,7 +147,7 @@ export async function POST(request: Request) {
     const currentPlan = getString(existingSub.plan) ?? "free";
     const currentStatus = getString(existingSub.status)?.toLowerCase() ?? "free";
 
-    if (currentStatus === "active" || currentStatus === "trialing") {
+    if (currentStatus === "active" || currentStatus === "trialing" || currentStatus === "paid") {
       if (currentPlan === planRow.code) return publicErrorResponse(409, "Você já possui este plano ativo.");
       return publicErrorResponse(409, "Você já possui um plano ativo. Cancele antes de trocar de plano.");
     }

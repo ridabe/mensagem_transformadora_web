@@ -315,6 +315,7 @@ type DbSubscriptionRow = {
   status: SubscriptionStatus | string;
   current_period_start: string | null;
   current_period_end: string | null;
+  cancelled_at: string | null;
 };
 
 type DbPlanRow = {
@@ -327,6 +328,7 @@ export type CurrentSubscriptionInfo = {
   status: SubscriptionStatus | string;
   current_period_start: string | null;
   current_period_end: string | null;
+  cancelled_at: string | null;
   monthly_pre_sermon_limit: number | null;
 };
 
@@ -381,6 +383,17 @@ function isPastDueWithinGrace(currentPeriodEnd: Date | null, now: Date): boolean
   return now.getTime() <= graceEndMs;
 }
 
+function isCancelledWithinGrace(input: { currentPeriodEnd: Date | null; cancelledAt: Date | null; now: Date }): boolean {
+  if (input.currentPeriodEnd && input.now.getTime() <= input.currentPeriodEnd.getTime()) return true;
+
+  const graceDays = Number.parseInt(process.env.MT_PAST_DUE_GRACE_DAYS?.trim() || "", 10);
+  const safeGraceDays = Number.isFinite(graceDays) && graceDays >= 0 ? graceDays : 3;
+
+  if (!input.cancelledAt) return false;
+  const graceEndMs = input.cancelledAt.getTime() + safeGraceDays * 24 * 60 * 60 * 1000;
+  return input.now.getTime() <= graceEndMs;
+}
+
 /**
  * getCurrentSubscription(profileId)
  *
@@ -394,6 +407,7 @@ export async function getCurrentSubscription(profileId: string): Promise<Current
       status: "free",
       current_period_start: null,
       current_period_end: null,
+      cancelled_at: null,
       monthly_pre_sermon_limit: 10,
     };
   }
@@ -401,7 +415,7 @@ export async function getCurrentSubscription(profileId: string): Promise<Current
   const service = createServiceRoleClient();
   const { data: subRow } = await service
     .from("subscriptions")
-    .select("plan,status,current_period_start,current_period_end")
+    .select("plan,status,current_period_start,current_period_end,cancelled_at")
     .eq("leader_id", safeProfileId)
     .maybeSingle<DbSubscriptionRow>();
 
@@ -413,6 +427,7 @@ export async function getCurrentSubscription(profileId: string): Promise<Current
     typeof subRow?.current_period_start === "string" ? subRow.current_period_start : null;
   const currentPeriodEnd =
     typeof subRow?.current_period_end === "string" ? subRow.current_period_end : null;
+  const cancelledAt = typeof subRow?.cancelled_at === "string" ? subRow.cancelled_at : null;
 
   const normalizedStatus = status.trim().toLowerCase();
   const effectivePlanCode = normalizedStatus === "pending" ? "free" : planCode;
@@ -439,6 +454,7 @@ export async function getCurrentSubscription(profileId: string): Promise<Current
     status,
     current_period_start: currentPeriodStart,
     current_period_end: currentPeriodEnd,
+    cancelled_at: cancelledAt,
     monthly_pre_sermon_limit: monthlyPreSermonLimit,
   };
 }
@@ -528,6 +544,7 @@ export async function canCreatePreSermon(profileId: string): Promise<CanCreatePr
   const paid = isPaidPlan(planCode);
   const currentPeriodEnd = parseIsoDate(subscription.current_period_end);
   const pastDueAllowed = status === "past_due" && isPastDueWithinGrace(currentPeriodEnd, now);
+  const cancelledAt = parseIsoDate(subscription.cancelled_at);
 
   const freeLimit = 10;
   const planLimit =
@@ -536,12 +553,18 @@ export async function canCreatePreSermon(profileId: string): Promise<CanCreatePr
       : null;
 
   const isActiveOrTrial = isActiveLikeStatus(status);
-  const isPaidAllowed = paid && (isActiveOrTrial || pastDueAllowed);
+  const cancelledGraceAllowed =
+    status === "cancelled" &&
+    paid &&
+    planLimit != null &&
+    isCancelledWithinGrace({ currentPeriodEnd, cancelledAt, now });
 
   const effectiveLimit =
-    isPaidAllowed && planLimit == null
-      ? null
-      : isPaidAllowed && planLimit != null
+    paid && (isActiveOrTrial || pastDueAllowed)
+      ? planLimit == null
+        ? null
+        : planLimit
+      : cancelledGraceAllowed
         ? planLimit
         : freeLimit;
 
