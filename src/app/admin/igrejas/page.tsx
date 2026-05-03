@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
@@ -345,6 +346,12 @@ export default async function AdminIgrejasPage({ searchParams }: AdminChurchesPa
                     Líderes: <span className="font-semibold text-[var(--mt-text)]">{church.leadersCount}</span>
                   </p>
                   <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/admin/lideres?church=${encodeURIComponent(church.id)}`}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-semibold text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
+                    >
+                      Ver líderes
+                    </Link>
                     <button
                       type="submit"
                       className="inline-flex h-10 items-center justify-center rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-semibold text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
