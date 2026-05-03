@@ -1,6 +1,13 @@
+import { redirect } from "next/navigation";
+
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth/profiles";
 import { formatLeaderDisplayName, formatPtBrDate } from "@/lib/format";
+import { getAllChurches } from "@/features/admin/churches/adminChurches.service";
+import {
+  assignProfileToChurch,
+  removeProfileFromChurch,
+} from "@/features/admin/profiles/adminProfiles.service";
 
 type ProfileStatus = "active" | "blocked" | "pending";
 
@@ -14,7 +21,7 @@ type LeaderRow = {
   status: ProfileStatus | string;
   church_id: string | null;
   created_at?: string | null;
-  churches?: { name?: string | null } | null;
+  churches?: { name?: string | null; status?: string | null } | null;
 };
 
 type SubscriptionRow = {
@@ -51,6 +58,106 @@ function parseProfileStatus(value: string | undefined): ProfileStatus | "all" {
   if (value === "blocked") return "blocked";
   if (value === "pending") return "pending";
   return "all";
+}
+
+function getFormString(formData: FormData, key: string): string {
+  const v = formData.get(key);
+  return typeof v === "string" ? v : "";
+}
+
+function extractMissingEnvFromError(err: unknown): string | null {
+  if (!err || typeof err !== "object") return null;
+  const message = "message" in err && typeof err.message === "string" ? err.message : "";
+  const match = message.match(/Variável de ambiente ausente:\s*(.+)$/);
+  return match?.[1]?.trim() ? match[1].trim() : null;
+}
+
+function appendQuery(url: string, params: Record<string, string>) {
+  const [base, search] = url.split("?", 2);
+  const sp = new URLSearchParams(search ?? "");
+  for (const [k, v] of Object.entries(params)) sp.set(k, v);
+  const next = sp.toString();
+  return next ? `${base}?${next}` : base;
+}
+
+function safeReturnTo(value: string): string {
+  const v = value.trim();
+  if (!v) return "/admin/lideres";
+  if (!v.startsWith("/admin/lideres")) return "/admin/lideres";
+  return v;
+}
+
+export async function assignProfileToChurchAction(formData: FormData) {
+  "use server";
+
+  try {
+    await createClient();
+  } catch (err) {
+    const missing = extractMissingEnvFromError(err);
+    const url = missing
+      ? `/admin/login?error=config&missing=${encodeURIComponent(missing)}`
+      : "/admin/login?error=config";
+    redirect(url);
+  }
+
+  await requireAdmin();
+
+  const profileId = getFormString(formData, "profile_id").trim();
+  const churchId = getFormString(formData, "church_id").trim();
+  const allowInactive = getFormString(formData, "allow_inactive").trim() === "1";
+  const returnTo = safeReturnTo(getFormString(formData, "return_to"));
+
+  if (!profileId || !churchId) {
+    redirect(appendQuery(returnTo, { error: "invalid" }));
+  }
+
+  const result = await assignProfileToChurch({ profileId, churchId, allowInactive });
+  if (!result.ok) {
+    const error =
+      result.error === "PROFILE_NOT_FOUND"
+        ? "profile_not_found"
+        : result.error === "CHURCH_NOT_FOUND"
+          ? "church_not_found"
+          : result.error === "CHURCH_INACTIVE"
+            ? "church_inactive"
+            : "update_failed";
+    redirect(appendQuery(returnTo, { error }));
+  }
+
+  redirect(appendQuery(returnTo, { saved: "1" }));
+}
+
+export async function removeProfileFromChurchAction(formData: FormData) {
+  "use server";
+
+  try {
+    await createClient();
+  } catch (err) {
+    const missing = extractMissingEnvFromError(err);
+    const url = missing
+      ? `/admin/login?error=config&missing=${encodeURIComponent(missing)}`
+      : "/admin/login?error=config";
+    redirect(url);
+  }
+
+  await requireAdmin();
+
+  const profileId = getFormString(formData, "profile_id").trim();
+  const returnTo = safeReturnTo(getFormString(formData, "return_to"));
+  if (!profileId) redirect(appendQuery(returnTo, { error: "invalid" }));
+
+  const result = await removeProfileFromChurch(profileId);
+  if (!result.ok) {
+    const error =
+      result.error === "PROFILE_NOT_FOUND"
+        ? "profile_not_found"
+        : result.error === "PROFILE_NOT_ASSOCIATED"
+          ? "not_associated"
+          : "update_failed";
+    redirect(appendQuery(returnTo, { error }));
+  }
+
+  redirect(appendQuery(returnTo, { saved: "1" }));
 }
 
 /**
@@ -139,6 +246,10 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
   const sp = searchParams ? await searchParams : undefined;
   const q = getString(sp, "q")?.trim() ?? "";
   const statusFilter = parseProfileStatus(getString(sp, "status"));
+  const churchFilter = getString(sp, "church")?.trim() ?? "all";
+  const showInactive = getString(sp, "showInactive")?.trim() === "1";
+  const error = getString(sp, "error")?.trim() ?? "";
+  const saved = getString(sp, "saved")?.trim() === "1";
 
   try {
     await createClient();
@@ -161,12 +272,16 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
 
   let leadersQuery = service
     .from("profiles")
-    .select("id,auth_user_id,name,display_name,email,ministry_title,status,church_id,created_at,churches(name)")
+    .select("id,auth_user_id,name,display_name,email,ministry_title,status,church_id,created_at,churches(name,status)")
     .eq("role", "leader")
     .order("display_name", { ascending: true })
     .limit(250);
 
   if (statusFilter !== "all") leadersQuery = leadersQuery.eq("status", statusFilter);
+  if (churchFilter !== "all") {
+    if (churchFilter === "none") leadersQuery = leadersQuery.is("church_id", null);
+    else leadersQuery = leadersQuery.eq("church_id", churchFilter);
+  }
   if (q) {
     const escaped = q.replaceAll(",", " ");
     leadersQuery = leadersQuery.or(`display_name.ilike.%${escaped}%,name.ilike.%${escaped}%,email.ilike.%${escaped}%`);
@@ -189,6 +304,11 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
   const authUserIds = leaders
     .map((l) => (typeof l.auth_user_id === "string" ? l.auth_user_id : ""))
     .filter(Boolean);
+
+  const churchesResult = await getAllChurches({ includeInactive: true });
+  const allChurches = churchesResult.ok ? churchesResult.items : [];
+  const activeChurches = allChurches.filter((c) => c.status === "active");
+  const assignOptions = showInactive ? allChurches : activeChurches;
 
   const subscriptionMap = new Map<string, SubscriptionRow>();
   if (authUserIds.length) {
@@ -280,6 +400,28 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
         </p>
       </header>
 
+      {saved ? (
+        <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4 text-sm">
+          Alterações salvas.
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4 text-sm">
+          {error === "invalid"
+            ? "Dados inválidos."
+            : error === "profile_not_found"
+              ? "Usuário não encontrado."
+              : error === "church_not_found"
+                ? "Igreja não encontrada."
+                : error === "church_inactive"
+                  ? "Igreja inativa não pode ser usada para novo vínculo (habilite “Mostrar inativas” para permitir)."
+                  : error === "not_associated"
+                    ? "Este usuário não possui igreja vinculada."
+                    : "Não foi possível salvar a alteração."}
+        </div>
+      ) : null}
+
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-4">
         <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-5">
           <p className="text-xs font-medium text-[var(--mt-muted)]">Total</p>
@@ -299,7 +441,7 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
         </div>
       </section>
 
-      <form className="flex flex-col gap-3 rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-5 sm:flex-row sm:items-end">
+      <form className="flex flex-col gap-3 rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-5 sm:flex-row sm:flex-wrap sm:items-end">
         <label className="flex flex-1 flex-col gap-2 text-sm">
           <span className="font-semibold">Buscar</span>
           <input
@@ -324,6 +466,35 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
           </select>
         </label>
 
+        <label className="flex flex-col gap-2 text-sm sm:w-72">
+          <span className="font-semibold">Igreja</span>
+          <select
+            name="church"
+            defaultValue={churchFilter}
+            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2"
+          >
+            <option value="all">Todas</option>
+            <option value="none">Sem igreja</option>
+            {allChurches.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+                {c.status === "inactive" ? " (inativa)" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="flex items-center gap-2 text-sm sm:pb-2">
+          <input
+            type="checkbox"
+            name="showInactive"
+            value="1"
+            defaultChecked={showInactive}
+            className="h-4 w-4 accent-[var(--mt-navy)]"
+          />
+          Mostrar inativas
+        </label>
+
         <button
           type="submit"
           className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--mt-navy)] px-5 text-sm font-semibold text-white hover:opacity-95"
@@ -344,6 +515,8 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
               const leaderId = typeof l.auth_user_id === "string" ? l.auth_user_id : "";
               const churchName =
                 l.churches && typeof l.churches.name === "string" ? l.churches.name : null;
+              const churchStatus =
+                l.churches && typeof l.churches.status === "string" ? l.churches.status : null;
               const sub = leaderId ? subscriptionMap.get(leaderId) : undefined;
               const plan = sub && typeof sub.plan === "string" ? sub.plan : "free";
               const subStatus = sub && typeof sub.status === "string" ? sub.status : "free";
@@ -370,7 +543,7 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
                     <p className="truncate text-base font-semibold">{leaderName}</p>
                     <p className="mt-1 text-sm text-[var(--mt-muted)]">
                       {l.email} • {status}
-                      {churchName ? ` • ${churchName}` : ""}
+                      {churchName ? ` • ${churchName}${churchStatus === "inactive" ? " (inativa)" : ""}` : ""}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -383,6 +556,61 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
                         : `Ciclo: ${usedInCycle}/${effective.limit} • restam ${remaining}`}
                       {window ? ` • renova ${window.endLabel}` : ""}
                     </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <form action={assignProfileToChurchAction} className="flex items-center gap-2">
+                      <input type="hidden" name="profile_id" value={l.id} />
+                      <input type="hidden" name="allow_inactive" value={showInactive ? "1" : "0"} />
+                      <input
+                        type="hidden"
+                        name="return_to"
+                        value={appendQuery("/admin/lideres", {
+                          q,
+                          status: statusFilter,
+                          church: churchFilter,
+                          showInactive: showInactive ? "1" : "0",
+                        })}
+                      />
+                      <select
+                        name="church_id"
+                        defaultValue={l.church_id ?? ""}
+                        className="h-10 max-w-[16rem] rounded-xl border border-[var(--mt-border)] bg-transparent px-3 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2"
+                      >
+                        <option value="">Selecione igreja</option>
+                        {assignOptions.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                            {c.status === "inactive" ? " (inativa)" : ""}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="submit"
+                        className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--mt-navy)] px-4 text-sm font-semibold text-white hover:opacity-95"
+                      >
+                        Vincular
+                      </button>
+                    </form>
+                    <form action={removeProfileFromChurchAction}>
+                      <input type="hidden" name="profile_id" value={l.id} />
+                      <input
+                        type="hidden"
+                        name="return_to"
+                        value={appendQuery("/admin/lideres", {
+                          q,
+                          status: statusFilter,
+                          church: churchFilter,
+                          showInactive: showInactive ? "1" : "0",
+                        })}
+                      />
+                      <button
+                        type="submit"
+                        disabled={!l.church_id}
+                        className="inline-flex h-10 items-center justify-center rounded-xl border border-[var(--mt-border)] bg-transparent px-4 text-sm font-semibold text-[var(--mt-text)] hover:bg-[var(--mt-surface)] disabled:opacity-50"
+                      >
+                        Remover
+                      </button>
+                    </form>
                   </div>
                 </div>
               );
