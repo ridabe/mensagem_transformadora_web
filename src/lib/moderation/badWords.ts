@@ -16,6 +16,12 @@ export const BANNED_WORDS = [
   "vai tomar no cu",
   "tomar no cu",
   "cu",
+  "Buceta",
+  "Boceta",
+  "Buça",
+  "cuzao",
+  "cuzão",
+  "xibiu",
 ];
 
 function escapeRegex(text: string): string {
