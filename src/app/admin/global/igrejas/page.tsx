@@ -42,10 +42,40 @@ function PlanBadge({ planType }: { planType: string }) {
     free: "Plano Free",
     basic: "Plano Básico",
     pro: "Plano Pro",
+    business: "Plano Business",
   };
+  const colors: Record<string, string> = {
+    free: "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300",
+    basic: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+    pro: "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300",
+    business: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+  };
+
   return (
-    <span className="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">
+    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${colors[planType] ?? colors.free}`}>
       {labels[planType] || planType}
+    </span>
+  );
+}
+
+function PlanStatusBadge({ planStatus }: { planStatus: string }) {
+  const labels: Record<string, string> = {
+    inactive: "Inativo",
+    active: "Ativo",
+    suspended: "Suspenso",
+    cancelled: "Cancelado",
+  };
+
+  const colors: Record<string, string> = {
+    inactive: "bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300",
+    active: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+    suspended: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+    cancelled: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300",
+  };
+
+  return (
+    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${colors[planStatus] ?? colors.inactive}`}>
+      {labels[planStatus] || planStatus}
     </span>
   );
 }
@@ -126,7 +156,10 @@ export default async function AdminGlobalIgrejasPage({
                   Plano
                 </th>
                 <th className="px-6 py-3 text-left font-semibold text-[var(--mt-text)]">
-                  Status
+                  Status Comercial
+                </th>
+                <th className="px-6 py-3 text-left font-semibold text-[var(--mt-text)]">
+                  Status Igreja
                 </th>
                 <th className="px-6 py-3 text-left font-semibold text-[var(--mt-text)]">
                   Criada em
@@ -152,6 +185,9 @@ export default async function AdminGlobalIgrejasPage({
                   </td>
                   <td className="px-6 py-4">
                     <PlanBadge planType={church.plan_type} />
+                  </td>
+                  <td className="px-6 py-4">
+                    <PlanStatusBadge planStatus={church.plan_status} />
                   </td>
                   <td className="px-6 py-4">
                     <StatusBadge status={church.status} />

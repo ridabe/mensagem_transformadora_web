@@ -4,6 +4,13 @@ import { redirect } from "next/navigation";
 
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth/profiles";
+import {
+  ChurchPlanStatus,
+  ChurchPlanStatusInfo,
+  ChurchPlanType,
+  isValidChurchPlanStatus,
+  isValidChurchPlanType,
+} from "@/features/admin/churches/churchPlans";
 
 // Types
 export type ChurchRow = {
@@ -12,8 +19,8 @@ export type ChurchRow = {
   city: string | null;
   state: string | null;
   status: "active" | "inactive";
-  plan_type: string;
-  plan_status: string;
+  plan_type: ChurchPlanType;
+  plan_status: ChurchPlanStatus;
   business_enabled_at: string | null;
   business_notes: string | null;
   created_at: string;
@@ -40,18 +47,11 @@ function getString(value: unknown): string {
 
 function normalizeOptionalText(value: string): string | null {
   const trimmed = value.trim();
-  return trimmed ? trimmed : "";
+  return trimmed ? trimmed : null;
 }
 
 function parseStatus(value: string): "active" | "inactive" {
   return value === "inactive" ? "inactive" : "active";
-}
-
-function extractMissingEnvFromError(err: unknown): string | null {
-  if (!err || typeof err !== "object") return null;
-  const message = "message" in err && typeof err.message === "string" ? err.message : "";
-  const match = message.match(/Variável de ambiente ausente:\s*(.+)$/);
-  return match?.[1]?.trim() ? match[1].trim() : null;
 }
 
 // Query Actions
@@ -96,6 +96,81 @@ export async function getChurchUsers(
 
   if (error) throw new Error(`Failed to fetch church users: ${error.message}`);
   return (data || []) as ProfileRowWithChurch[];
+}
+
+export async function getChurchPlanStatus(id: string): Promise<ChurchPlanStatusInfo | null> {
+  const church = await getChurchById(id);
+  if (!church) return null;
+  return {
+    plan_type: church.plan_type,
+    plan_status: church.plan_status,
+    business_enabled_at: church.business_enabled_at,
+    business_notes: church.business_notes,
+  };
+}
+
+export async function updateChurchPlan(input: {
+  id: string;
+  plan_type: ChurchPlanType;
+  plan_status: ChurchPlanStatus;
+  business_notes: string | null;
+  name?: string;
+  city?: string | null;
+  state?: string | null;
+  status?: "active" | "inactive";
+}) {
+  const existing = await getChurchById(input.id);
+  if (!existing) {
+    throw new Error(`Church with id ${input.id} not found`);
+  }
+
+  const updateData: Record<string, unknown> = {
+    plan_type: input.plan_type,
+    plan_status: input.plan_status,
+    business_notes: input.business_notes,
+  };
+
+  if (typeof input.name !== "undefined") updateData.name = input.name;
+  if (typeof input.city !== "undefined") updateData.city = input.city ?? null;
+  if (typeof input.state !== "undefined") updateData.state = input.state ?? null;
+  if (typeof input.status !== "undefined") updateData.status = input.status;
+
+  if (input.plan_type === "business" && input.plan_status === "active" && !existing.business_enabled_at) {
+    updateData.business_enabled_at = new Date().toISOString();
+  }
+
+  const service = createServiceRoleClient();
+  const { error } = await service.from("churches").update(updateData).eq("id", input.id);
+  if (error) {
+    throw new Error(`Failed to update church plan: ${error.message}`);
+  }
+}
+
+export async function activateBusinessPlan(id: string, businessNotes: string | null = null) {
+  return updateChurchPlan({
+    id,
+    plan_type: "business",
+    plan_status: "active",
+    business_notes: businessNotes,
+  });
+}
+
+export async function suspendBusinessPlan(id: string, businessNotes: string | null = null) {
+  return updateChurchPlan({
+    id,
+    plan_type: "business",
+    plan_status: "suspended",
+    business_notes: businessNotes,
+  });
+}
+
+export async function cancelBusinessPlan(id: string, businessNotes: string | null = null) {
+  return updateChurchPlan({
+    id,
+    plan_type: "business",
+    plan_status: "cancelled",
+    business_notes: businessNotes,
+  });
 }
 
 // Write Actions
@@ -148,25 +223,34 @@ export async function updateChurchAction(formData: FormData) {
   const city = normalizeOptionalText(getString(formData.get("city")));
   const state = normalizeOptionalText(getString(formData.get("state")));
   const status = parseStatus(getString(formData.get("status")));
+  const planTypeInput = getString(formData.get("plan_type"));
+  const planStatusInput = getString(formData.get("plan_status"));
   const businessNotes = normalizeOptionalText(getString(formData.get("business_notes")));
 
   if (!name) {
     redirect(`/admin/global/igrejas?error=name&id=${encodeURIComponent(id)}`);
   }
 
-  const service = createServiceRoleClient();
-  const { error } = await service
-    .from("churches")
-    .update({
-      name,
-      city: city || null,
-      state: state || null,
-      status,
-      business_notes: businessNotes || null,
-    })
-    .eq("id", id);
+  if (!isValidChurchPlanType(planTypeInput)) {
+    redirect(`/admin/global/igrejas?error=plan_type&id=${encodeURIComponent(id)}`);
+  }
 
-  if (error) {
+  if (!isValidChurchPlanStatus(planStatusInput)) {
+    redirect(`/admin/global/igrejas?error=plan_status&id=${encodeURIComponent(id)}`);
+  }
+
+  try {
+    await updateChurchPlan({
+      id,
+      name,
+      city,
+      state,
+      status,
+      plan_type: planTypeInput,
+      plan_status: planStatusInput,
+      business_notes: businessNotes,
+    });
+  } catch {
     redirect(`/admin/global/igrejas?error=update&id=${encodeURIComponent(id)}`);
   }
 

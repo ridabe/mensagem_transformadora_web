@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatPtBrDate } from "@/lib/format";
 import { requireAdmin } from "@/lib/auth/profiles";
+import ConfirmBusinessPlanForm from "@/components/forms/ConfirmBusinessPlanForm";
 import {
   getChurchById,
   getChurchUsers,
@@ -29,6 +30,8 @@ function getErrorMessage(error: string | undefined): string | null {
     name: "Nome da igreja é obrigatório",
     update: "Erro ao atualizar igreja",
     status: "Erro ao alterar status",
+    plan_type: "Tipo de plano inválido",
+    plan_status: "Status do plano inválido",
   };
   return error && error in messages ? messages[error] : null;
 }
@@ -52,10 +55,39 @@ function PlanBadge({ planType }: { planType: string }) {
     free: "Plano Free",
     basic: "Plano Básico",
     pro: "Plano Pro",
+    business: "Plano Business",
   };
+  const colors: Record<string, string> = {
+    free: "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300",
+    basic: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+    pro: "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300",
+    business: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+  };
+
   return (
-    <span className="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">
+    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${colors[planType] ?? colors.free}`}>
       {labels[planType] || planType}
+    </span>
+  );
+}
+
+function PlanStatusBadge({ planStatus }: { planStatus: string }) {
+  const labels: Record<string, string> = {
+    inactive: "Inativo",
+    active: "Ativo",
+    suspended: "Suspenso",
+    cancelled: "Cancelado",
+  };
+  const colors: Record<string, string> = {
+    inactive: "bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300",
+    active: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+    suspended: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+    cancelled: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300",
+  };
+
+  return (
+    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${colors[planStatus] ?? colors.inactive}`}>
+      {labels[planStatus] || planStatus}
     </span>
   );
 }
@@ -156,7 +188,7 @@ export default async function AdminGlobalChurchDetailsPage({
       {/* Status Overview */}
       <div className="grid gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4">
-          <p className="text-xs text-[var(--mt-muted)]">Status</p>
+          <p className="text-xs text-[var(--mt-muted)]">Status Igreja</p>
           <div className="mt-2">
             <StatusBadge status={church.status} />
           </div>
@@ -166,6 +198,17 @@ export default async function AdminGlobalChurchDetailsPage({
           <div className="mt-2">
             <PlanBadge planType={church.plan_type} />
           </div>
+        </div>
+        <div className="rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4">
+          <p className="text-xs text-[var(--mt-muted)]">Status Comercial</p>
+          <div className="mt-2">
+            <PlanStatusBadge planStatus={church.plan_status} />
+          </div>
+          {church.business_enabled_at ? (
+            <p className="mt-2 text-xs text-[var(--mt-muted)]">
+              Ativado em {formatPtBrDate(new Date(church.business_enabled_at))}
+            </p>
+          ) : null}
         </div>
         <div className="rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4">
           <p className="text-xs text-[var(--mt-muted)]">Usuários</p>
@@ -180,7 +223,12 @@ export default async function AdminGlobalChurchDetailsPage({
       </div>
 
       {/* Edit Form */}
-      <form action={updateChurchAction} className="flex flex-col gap-6">
+      <ConfirmBusinessPlanForm
+        action={updateChurchAction}
+        initialPlanType={church.plan_type}
+        initialPlanStatus={church.plan_status}
+        className="flex flex-col gap-6"
+      >
         <input type="hidden" name="id" value={church.id} />
 
         <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
@@ -238,6 +286,48 @@ export default async function AdminGlobalChurchDetailsPage({
                 maxLength={2}
                 className="rounded-lg border border-[var(--mt-border)] bg-[var(--mt-background)] px-4 py-2 text-sm uppercase outline-none focus:border-[var(--mt-primary)]"
               />
+            </div>
+
+            {/* Plan Type */}
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="plan_type"
+                className="text-sm font-semibold text-[var(--mt-text)]"
+              >
+                Plano
+              </label>
+              <select
+                id="plan_type"
+                name="plan_type"
+                defaultValue={church.plan_type}
+                className="rounded-lg border border-[var(--mt-border)] bg-[var(--mt-background)] px-4 py-2 text-sm outline-none focus:border-[var(--mt-primary)]"
+              >
+                <option value="free">Plano Free</option>
+                <option value="basic">Plano Básico</option>
+                <option value="pro">Plano Pro</option>
+                <option value="business">Plano Business</option>
+              </select>
+            </div>
+
+            {/* Plan Status */}
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="plan_status"
+                className="text-sm font-semibold text-[var(--mt-text)]"
+              >
+                Status Comercial
+              </label>
+              <select
+                id="plan_status"
+                name="plan_status"
+                defaultValue={church.plan_status}
+                className="rounded-lg border border-[var(--mt-border)] bg-[var(--mt-background)] px-4 py-2 text-sm outline-none focus:border-[var(--mt-primary)]"
+              >
+                <option value="active">Ativo</option>
+                <option value="inactive">Inativo</option>
+                <option value="suspended">Suspenso</option>
+                <option value="cancelled">Cancelado</option>
+              </select>
             </div>
 
             {/* Status */}
@@ -302,7 +392,7 @@ export default async function AdminGlobalChurchDetailsPage({
             </button>
           </form>
         </div>
-      </form>
+      </ConfirmBusinessPlanForm>
 
       {/* Users Section */}
       <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
