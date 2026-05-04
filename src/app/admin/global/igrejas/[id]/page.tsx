@@ -300,7 +300,7 @@ export default async function AdminGlobalChurchDetailsPage({
                 id="plan_type"
                 name="plan_type"
                 defaultValue={church.plan_type}
-                className="rounded-lg border border-[var(--mt-border)] bg-[var(--mt-background)] px-4 py-2 text-sm outline-none focus:border-[var(--mt-primary)]"
+                className="w-full rounded-lg border border-[var(--mt-border)] bg-[var(--mt-background)] px-4 py-2 text-sm outline-none focus:border-[var(--mt-primary)]"
               >
                 <option value="free">Plano Free</option>
                 <option value="basic">Plano Básico</option>
@@ -321,7 +321,7 @@ export default async function AdminGlobalChurchDetailsPage({
                 id="plan_status"
                 name="plan_status"
                 defaultValue={church.plan_status}
-                className="rounded-lg border border-[var(--mt-border)] bg-[var(--mt-background)] px-4 py-2 text-sm outline-none focus:border-[var(--mt-primary)]"
+                className="w-full rounded-lg border border-[var(--mt-border)] bg-[var(--mt-background)] px-4 py-2 text-sm outline-none focus:border-[var(--mt-primary)]"
               >
                 <option value="active">Ativo</option>
                 <option value="inactive">Inativo</option>
