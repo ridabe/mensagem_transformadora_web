@@ -300,12 +300,20 @@ export default async function AdminGlobalChurchDetailsPage({
                 id="plan_type"
                 name="plan_type"
                 defaultValue={church.plan_type}
-                className="w-full rounded-lg border border-[var(--mt-border)] bg-[var(--mt-background)] px-4 py-2 text-sm outline-none focus:border-[var(--mt-primary)]"
+                className="h-11 w-full rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm outline-none focus:ring-2 focus:ring-[var(--mt-amber)] [color-scheme:dark]"
               >
-                <option value="free">Plano Free</option>
-                <option value="basic">Plano Básico</option>
-                <option value="pro">Plano Pro</option>
-                <option value="business">Plano Business</option>
+                <option value="free" className="bg-[var(--mt-surface)] text-[var(--mt-text)]">
+                  Plano Free
+                </option>
+                <option value="basic" className="bg-[var(--mt-surface)] text-[var(--mt-text)]">
+                  Plano Básico
+                </option>
+                <option value="pro" className="bg-[var(--mt-surface)] text-[var(--mt-text)]">
+                  Plano Pro
+                </option>
+                <option value="business" className="bg-[var(--mt-surface)] text-[var(--mt-text)]">
+                  Plano Business
+                </option>
               </select>
             </div>
 
@@ -321,12 +329,20 @@ export default async function AdminGlobalChurchDetailsPage({
                 id="plan_status"
                 name="plan_status"
                 defaultValue={church.plan_status}
-                className="w-full rounded-lg border border-[var(--mt-border)] bg-[var(--mt-background)] px-4 py-2 text-sm outline-none focus:border-[var(--mt-primary)]"
+                className="h-11 w-full rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm outline-none focus:ring-2 focus:ring-[var(--mt-amber)] [color-scheme:dark]"
               >
-                <option value="active">Ativo</option>
-                <option value="inactive">Inativo</option>
-                <option value="suspended">Suspenso</option>
-                <option value="cancelled">Cancelado</option>
+                <option value="active" className="bg-[var(--mt-surface)] text-[var(--mt-text)]">
+                  Ativo
+                </option>
+                <option value="inactive" className="bg-[var(--mt-surface)] text-[var(--mt-text)]">
+                  Inativo
+                </option>
+                <option value="suspended" className="bg-[var(--mt-surface)] text-[var(--mt-text)]">
+                  Suspenso
+                </option>
+                <option value="cancelled" className="bg-[var(--mt-surface)] text-[var(--mt-text)]">
+                  Cancelado
+                </option>
               </select>
             </div>
 
@@ -342,10 +358,14 @@ export default async function AdminGlobalChurchDetailsPage({
                 id="status"
                 name="status"
                 defaultValue={church.status}
-                className="rounded-lg border border-[var(--mt-border)] bg-[var(--mt-background)] px-4 py-2 text-sm outline-none focus:border-[var(--mt-primary)]"
+                className="h-11 w-full rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm outline-none focus:ring-2 focus:ring-[var(--mt-amber)] [color-scheme:dark]"
               >
-                <option value="active">Ativa</option>
-                <option value="inactive">Inativa</option>
+                <option value="active" className="bg-[var(--mt-surface)] text-[var(--mt-text)]">
+                  Ativa
+                </option>
+                <option value="inactive" className="bg-[var(--mt-surface)] text-[var(--mt-text)]">
+                  Inativa
+                </option>
               </select>
             </div>
           </div>
@@ -377,22 +397,27 @@ export default async function AdminGlobalChurchDetailsPage({
           >
             Salvar Alterações
           </button>
-          <form action={toggleChurchStatusAction} className="contents">
-            <input type="hidden" name="id" value={church.id} />
-            <input
-              type="hidden"
-              name="new_status"
-              value={church.status === "active" ? "inactive" : "active"}
-            />
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-6 py-2 text-sm font-semibold text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
-            >
-              {church.status === "active" ? "Desativar" : "Ativar"}
-            </button>
-          </form>
+          <button
+            type="submit"
+            form="toggle-church-status-form"
+            className="inline-flex items-center justify-center rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-6 py-2 text-sm font-semibold text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
+          >
+            {church.status === "active" ? "Desativar" : "Ativar"}
+          </button>
         </div>
       </ConfirmBusinessPlanForm>
+      <form
+        id="toggle-church-status-form"
+        action={toggleChurchStatusAction}
+        className="hidden"
+      >
+        <input type="hidden" name="id" value={church.id} />
+        <input
+          type="hidden"
+          name="new_status"
+          value={church.status === "active" ? "inactive" : "active"}
+        />
+      </form>
 
       {/* Users Section */}
       <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
