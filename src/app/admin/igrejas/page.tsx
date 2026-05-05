@@ -358,10 +358,10 @@ export default async function AdminIgrejasPage({ searchParams }: AdminChurchesPa
                     >
                       Salvar
                     </button>
+                    <input type="hidden" name="next_status" value={church.status === "active" ? "inactive" : "active"} />
                     <button
+                      type="submit"
                       formAction={setChurchStatusAction}
-                      name="next_status"
-                      value={church.status === "active" ? "inactive" : "active"}
                       className="inline-flex h-10 items-center justify-center rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-semibold text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
                     >
                       {church.status === "active" ? "Inativar" : "Ativar"}
