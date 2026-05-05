@@ -96,6 +96,10 @@ export class ChurchService {
       throw new Error('Igreja não encontrada')
     }
 
+    if (church.status !== 'active') {
+      throw new Error('Igreja não está ativa')
+    }
+
     if (church.plan_type !== 'business' || church.plan_status !== 'active') {
       throw new Error('Igreja não possui plano Business ativo')
     }
@@ -134,6 +138,41 @@ export class ChurchService {
     }
 
     return { profile, church }
+  }
+
+  async getChurchMembers(): Promise<Profile[]> {
+    const { church } = await this.assertChurchAdmin()
+    const supabase = await this.getSupabase()
+
+    const { data: members, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('church_id', church.id)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      throw new Error('Erro ao buscar membros da igreja')
+    }
+
+    return members || []
+  }
+
+  async getChurchAdmins(): Promise<Profile[]> {
+    const { church } = await this.assertChurchAdmin()
+    const supabase = await this.getSupabase()
+
+    const { data: admins, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('church_id', church.id)
+      .eq('role', 'church_admin')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      throw new Error('Erro ao buscar administradores da igreja')
+    }
+
+    return admins || []
   }
 
   /**
@@ -260,12 +299,8 @@ export class ChurchService {
     }
   }
 
-  /**
-   * Promove um usuário a church_admin (apenas Admin Global)
-   */
-  async promoteToChurchAdmin(userId: string, churchId: string): Promise<void> {
+  async getCurrentProfile(): Promise<Profile> {
     const supabase = await this.getSupabase()
-    // Verificar se é Admin Global
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
       throw new Error('Usuário não autenticado')
@@ -277,18 +312,72 @@ export class ChurchService {
       .eq('auth_user_id', user.id)
       .single()
 
-    if (profileError || !profile || profile.role !== 'admin') {
-      throw new Error('Acesso negado: apenas Admin Global pode promover usuários')
+    if (profileError || !profile) {
+      throw new Error('Perfil não encontrado')
     }
 
-    // Verificar igreja
-    await this.assertBusinessChurchActive(churchId)
+    return profile
+  }
 
-    // Promover
+  async getProfileById(profileId: string): Promise<Profile> {
+    const supabase = await this.getSupabase()
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', profileId)
+      .single()
+
+    if (error || !profile) {
+      throw new Error('Perfil não encontrado')
+    }
+
+    return profile
+  }
+
+  async promoteUserToChurchAdmin(profileId: string): Promise<void> {
+    const supabase = await this.getSupabase()
+    const currentProfile = await this.getCurrentProfile()
+    const targetProfile = await this.getProfileById(profileId)
+
+    if (!targetProfile.church_id) {
+      throw new Error('Usuário não pertence a nenhuma igreja')
+    }
+
+    if (targetProfile.role === 'admin') {
+      throw new Error('Não é possível promover um Admin Global')
+    }
+
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('*')
+      .eq('id', targetProfile.church_id)
+      .single()
+
+    if (churchError || !church) {
+      throw new Error('Igreja não encontrada')
+    }
+
+    if (church.status !== 'active') {
+      throw new Error('Igreja não está ativa')
+    }
+
+    if (church.plan_type !== 'business' || church.plan_status !== 'active') {
+      throw new Error('Igreja não possui plano Business ativo')
+    }
+
+    if (currentProfile.role === 'leader') {
+      throw new Error('Acesso negado: usuário não tem permissão para promover')
+    }
+
+    if (currentProfile.role === 'church_admin' && currentProfile.church_id !== targetProfile.church_id) {
+      throw new Error('Acesso negado: só é possível promover usuários da própria igreja')
+    }
+
     const { error } = await supabase
       .from('profiles')
-      .update({ role: 'church_admin', church_id: churchId })
-      .eq('id', userId)
+      .update({ role: 'church_admin' })
+      .eq('id', profileId)
+      .eq('church_id', targetProfile.church_id)
 
     if (error) {
       throw new Error('Erro ao promover usuário')
@@ -298,29 +387,46 @@ export class ChurchService {
   /**
    * Remove papel de church_admin (apenas Admin Global)
    */
-  async demoteChurchAdmin(userId: string): Promise<void> {
+  async demoteUserFromChurchAdmin(profileId: string): Promise<void> {
     const supabase = await this.getSupabase()
-    // Verificar se é Admin Global
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user) {
-      throw new Error('Usuário não autenticado')
+    const currentProfile = await this.getCurrentProfile()
+    const targetProfile = await this.getProfileById(profileId)
+
+    if (targetProfile.role !== 'church_admin') {
+      throw new Error('Usuário não é administrador da igreja')
     }
 
-    const { data: profile, error: profileError } = await supabase
+    if (!targetProfile.church_id) {
+      throw new Error('Usuário não pertence a uma igreja')
+    }
+
+    if (currentProfile.role === 'leader') {
+      throw new Error('Acesso negado: usuário não tem permissão para remover administrador')
+    }
+
+    if (currentProfile.role === 'church_admin' && currentProfile.church_id !== targetProfile.church_id) {
+      throw new Error('Acesso negado: só é possível remover administradores da própria igreja')
+    }
+
+    const { data: activeAdmins, error: activeAdminsError } = await supabase
       .from('profiles')
-      .select('*')
-      .eq('auth_user_id', user.id)
-      .single()
+      .select('id')
+      .eq('church_id', targetProfile.church_id)
+      .eq('role', 'church_admin')
+      .eq('status', 'active')
 
-    if (profileError || !profile || profile.role !== 'admin') {
-      throw new Error('Acesso negado: apenas Admin Global pode rebaixar usuários')
+    if (activeAdminsError) {
+      throw new Error('Erro ao verificar administradores da igreja')
     }
 
-    // Rebaixar para leader
+    if ((activeAdmins?.length ?? 0) <= 1) {
+      throw new Error('Esta igreja precisa ter pelo menos um administrador ativo.')
+    }
+
     const { error } = await supabase
       .from('profiles')
       .update({ role: 'leader' })
-      .eq('id', userId)
+      .eq('id', profileId)
       .eq('role', 'church_admin')
 
     if (error) {

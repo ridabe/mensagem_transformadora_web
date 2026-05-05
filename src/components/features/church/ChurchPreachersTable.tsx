@@ -1,4 +1,4 @@
-import { deactivateChurchPreacher, removeChurchPreacher } from '@/app/igreja/preleitores/actions'
+import { deactivateChurchPreacher, demoteChurchAdmin, removeChurchPreacher, promoteChurchAdmin } from '@/app/igreja/preleitores/actions'
 import ChurchRoleBadge from './ChurchRoleBadge'
 
 type Profile = {
@@ -59,20 +59,53 @@ export default function ChurchPreachersTable({ preachers }: ChurchPreachersTable
                   </span>
                   <div className="flex space-x-2">
                     {preacher.status === 'active' ? (
-                      <form action={deactivateChurchPreacher}>
-                        <input type="hidden" name="preacherId" value={preacher.id} />
-                        <button
-                          type="submit"
-                          onClick={(e) => {
-                            if (!confirm('Tem certeza que deseja desativar este preleitor?')) {
-                              e.preventDefault()
-                            }
-                          }}
-                          className="text-red-600 hover:text-red-900 text-sm font-medium"
-                        >
-                          Desativar
-                        </button>
-                      </form>
+                      <>
+                        {preacher.role === 'church_admin' ? (
+                          <form action={demoteChurchAdmin}>
+                            <input type="hidden" name="preacherId" value={preacher.id} />
+                            <button
+                              type="submit"
+                              onClick={(e) => {
+                                if (!confirm('Tem certeza que deseja remover o papel de administrador desta igreja?')) {
+                                  e.preventDefault()
+                                }
+                              }}
+                              className="text-yellow-600 hover:text-yellow-900 text-sm font-medium"
+                            >
+                              Remover admin da igreja
+                            </button>
+                          </form>
+                        ) : (
+                          <form action={promoteChurchAdmin}>
+                            <input type="hidden" name="preacherId" value={preacher.id} />
+                            <button
+                              type="submit"
+                              onClick={(e) => {
+                                if (!confirm('Tem certeza que deseja tornar este usuário administrador da igreja?')) {
+                                  e.preventDefault()
+                                }
+                              }}
+                              className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                            >
+                              Tornar admin da igreja
+                            </button>
+                          </form>
+                        )}
+                        <form action={deactivateChurchPreacher}>
+                          <input type="hidden" name="preacherId" value={preacher.id} />
+                          <button
+                            type="submit"
+                            onClick={(e) => {
+                              if (!confirm('Tem certeza que deseja desativar este preleitor?')) {
+                                e.preventDefault()
+                              }
+                            }}
+                            className="text-red-600 hover:text-red-900 text-sm font-medium"
+                          >
+                            Desativar
+                          </button>
+                        </form>
+                      </>
                     ) : (
                       <form action={removeChurchPreacher}>
                         <input type="hidden" name="preacherId" value={preacher.id} />

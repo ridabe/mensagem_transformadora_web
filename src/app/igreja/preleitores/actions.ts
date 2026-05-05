@@ -49,6 +49,30 @@ export async function createChurchPreacher(formData: FormData) {
   }
 }
 
+export async function promoteChurchAdmin(formData: FormData) {
+  const preacherId = formData.get('preacherId') as string
+
+  try {
+    const churchService = new ChurchService()
+    await churchService.promoteUserToChurchAdmin(preacherId)
+    revalidatePath('/igreja/preleitores')
+  } catch (error) {
+    throw new Error('Erro ao promover administrador da igreja: ' + (error as Error).message)
+  }
+}
+
+export async function demoteChurchAdmin(formData: FormData) {
+  const preacherId = formData.get('preacherId') as string
+
+  try {
+    const churchService = new ChurchService()
+    await churchService.demoteUserFromChurchAdmin(preacherId)
+    revalidatePath('/igreja/preleitores')
+  } catch (error) {
+    throw new Error('Erro ao remover papel de administrador da igreja: ' + (error as Error).message)
+  }
+}
+
 export async function deactivateChurchPreacher(formData: FormData) {
   const preacherId = formData.get('preacherId') as string
 
