@@ -13,6 +13,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isAdmin = pathname.startsWith("/admin");
   const isLeader = pathname.startsWith("/lider");
+  const isChurch = pathname.startsWith("/igreja");
   const isLogin = pathname === "/login";
   const isSignup = pathname === "/cadastro";
   const isAdminLogin = pathname === "/admin/login";
@@ -40,12 +41,15 @@ export async function middleware(request: NextRequest) {
     profile = null;
   }
 
-  const isProtected = isAdmin || isLeader;
+  const isProtected = isAdmin || isLeader || isChurch;
 
   if (isProtected) {
     if (isAdminLogin) {
       if (userId && profile) {
-        const role = profile.role === "admin" || profile.role === "leader" ? profile.role : null;
+        const role =
+          profile.role === "admin" || profile.role === "leader" || profile.role === "church_admin"
+            ? profile.role
+            : null;
         const status =
           profile.status === "active" || profile.status === "blocked" || profile.status === "pending"
             ? profile.status
@@ -61,6 +65,12 @@ export async function middleware(request: NextRequest) {
         if (role === "admin") {
           const url = request.nextUrl.clone();
           url.pathname = "/admin/dashboard";
+          return NextResponse.redirect(url);
+        }
+
+        if (role === "church_admin") {
+          const url = request.nextUrl.clone();
+          url.pathname = "/igreja/dashboard";
           return NextResponse.redirect(url);
         }
 
@@ -88,7 +98,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    const role = profile.role === "admin" || profile.role === "leader" ? profile.role : null;
+    const role =
+      profile.role === "admin" || profile.role === "leader" || profile.role === "church_admin"
+        ? profile.role
+        : null;
     const status =
       profile.status === "active" || profile.status === "blocked" || profile.status === "pending"
         ? profile.status
@@ -103,19 +116,28 @@ export async function middleware(request: NextRequest) {
 
     if (isAdmin && role !== "admin") {
       const url = request.nextUrl.clone();
-      url.pathname = "/lider/sermoes";
+      url.pathname = role === "church_admin" ? "/igreja/dashboard" : "/lider/sermoes";
       return NextResponse.redirect(url);
     }
 
-    if (isLeader && role !== "leader") {
+    if (isLeader && role !== "leader" && role !== "church_admin") {
       const url = request.nextUrl.clone();
-      url.pathname = "/admin/dashboard";
+      url.pathname = role === "admin" ? "/admin/dashboard" : "/login";
+      return NextResponse.redirect(url);
+    }
+
+    if (isChurch && role !== "church_admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = role === "admin" ? "/admin/dashboard" : "/lider/sermoes";
       return NextResponse.redirect(url);
     }
   }
 
   if (isLogin && request.method === "GET" && userId && profile) {
-    const role = profile.role === "admin" || profile.role === "leader" ? profile.role : null;
+    const role =
+      profile.role === "admin" || profile.role === "leader" || profile.role === "church_admin"
+        ? profile.role
+        : null;
     const status =
       profile.status === "active" || profile.status === "blocked" || profile.status === "pending"
         ? profile.status
@@ -131,6 +153,12 @@ export async function middleware(request: NextRequest) {
     if (role === "admin") {
       const url = request.nextUrl.clone();
       url.pathname = "/admin/dashboard";
+      return NextResponse.redirect(url);
+    }
+
+    if (role === "church_admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/igreja/dashboard";
       return NextResponse.redirect(url);
     }
 

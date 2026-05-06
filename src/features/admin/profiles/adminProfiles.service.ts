@@ -85,7 +85,11 @@ export async function assignProfileToChurch(input: {
 
   const { data: updated, error: updateError } = await service
     .from("profiles")
-    .update({ church_id: input.churchId })
+    .update({
+      church_id: input.churchId,
+      church_membership_source: "admin_global",
+      church_membership_confirmed_at: new Date().toISOString(),
+    })
     .eq("id", input.profileId)
     .select("id,church_id")
     .single();

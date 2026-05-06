@@ -10,6 +10,7 @@ export async function createChurchPreacher(formData: FormData) {
   const ministryTitle = formData.get('ministryTitle') as string
   const password = formData.get('password') as string
   const confirmPassword = formData.get('confirmPassword') as string
+  const accessType = formData.get('accessType') as string
 
   // Validações básicas
   if (!name?.trim()) {
@@ -39,12 +40,21 @@ export async function createChurchPreacher(formData: FormData) {
       name: name.trim(),
       email: email.trim(),
       ministryTitle: ministryTitle?.trim() || undefined,
-      password
+      password,
+      role: accessType === 'church_admin' ? 'church_admin' : 'leader'
     })
 
     revalidatePath('/igreja/preleitores')
     redirect('/igreja/preleitores')
   } catch (error) {
+    const isRedirect =
+      (typeof error === 'object' &&
+        error !== null &&
+        'digest' in error &&
+        typeof (error as { digest?: unknown }).digest === 'string' &&
+        (error as { digest: string }).digest.startsWith('NEXT_REDIRECT')) ||
+      (error instanceof Error && error.message === 'NEXT_REDIRECT')
+    if (isRedirect) throw error
     throw new Error('Erro ao criar preleitor: ' + (error as Error).message)
   }
 }

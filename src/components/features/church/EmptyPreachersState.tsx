@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
-export default function EmptyPreachersState() {
+export default function EmptyPreachersState(props: { churchName: string }) {
+  const name = props.churchName?.trim() ? props.churchName.trim() : 'sua igreja'
   return (
     <div className="text-center py-12">
       <div className="mx-auto h-12 w-12 text-gray-400">
@@ -14,10 +15,10 @@ export default function EmptyPreachersState() {
         </svg>
       </div>
       <h3 className="mt-2 text-sm font-medium text-gray-900">
-        Nenhum preleitor cadastrado
+        Nenhum preleitor cadastrado em {name}
       </h3>
       <p className="mt-1 text-sm text-gray-500">
-        Comece adicionando o primeiro preleitor à sua igreja.
+        Comece adicionando o primeiro preleitor à igreja {name}.
       </p>
       <div className="mt-6">
         <Link

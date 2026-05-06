@@ -10,9 +10,9 @@ export default async function ChurchDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard da Igreja</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard da Igreja — {church.name}</h1>
         <p className="text-gray-600 mt-1">
-          Gerencie os preleitores e recursos da sua igreja
+          Gerencie os preleitores e recursos da igreja {church.name}
         </p>
       </div>
 
@@ -20,28 +20,28 @@ export default async function ChurchDashboardPage() {
         <ChurchDashboardCard
           title="Preleitores"
           value={preachers.length}
-          description="Preleitores ativos na igreja"
+          description={`Preleitores ativos em ${church.name}`}
           href="/igreja/preleitores"
         />
 
         <ChurchDashboardCard
           title="Plano"
           value="Business"
-          description="Plano ativo"
+          description={`Plano ativo em ${church.name}`}
           href="#"
         />
 
         <ChurchDashboardCard
           title="Status"
           value="Ativo"
-          description="Igreja ativa"
+          description={`Igreja ${church.name} ativa`}
           href="#"
         />
       </div>
 
       <div className="bg-white shadow rounded-lg p-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">
-          Informações da Igreja
+          Informações da Igreja — {church.name}
         </h2>
         <dl className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
           <div>

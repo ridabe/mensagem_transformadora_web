@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth/profiles";
 import { formatLeaderDisplayName, formatPtBrDate } from "@/lib/format";
+import { ChurchService } from "@/lib/church";
 import { getAllChurches } from "@/features/admin/churches/adminChurches.service";
 import {
   assignProfileToChurch,
@@ -18,10 +19,11 @@ type LeaderRow = {
   display_name?: string;
   email: string;
   ministry_title?: string | null;
+  role: "leader" | "church_admin" | "admin" | string;
   status: ProfileStatus | string;
   church_id: string | null;
   created_at?: string | null;
-  churches?: { name?: string | null; status?: string | null } | null;
+  churches?: { name?: string | null; status?: string | null; plan_type?: string | null; plan_status?: string | null } | null;
 };
 
 type SubscriptionRow = {
@@ -85,6 +87,43 @@ function safeReturnTo(value: string): string {
   if (!v) return "/admin/lideres";
   if (!v.startsWith("/admin/lideres")) return "/admin/lideres";
   return v;
+}
+
+const churchAdminOptionMessage =
+  "Esta opção só está disponível para líderes associados a uma igreja com Plano Business ativo.";
+const businessOnlyActionMessage =
+  "Essa ação está disponível apenas para igrejas com Plano Business ativo.";
+
+function normalizeEmail(value: string): string | null {
+  const raw = value.trim().toLowerCase();
+  if (!raw) return null;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(raw)) return null;
+  return raw;
+}
+
+function normalizeMinistryTitle(value: string): string | null {
+  const raw = value.trim();
+  if (!raw) return null;
+  const normalized = raw
+    .normalize("NFD")
+    .replaceAll(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replaceAll(/[^a-z]/g, "");
+
+  if (
+    normalized === "pastor" ||
+    normalized === "diacono" ||
+    normalized === "bispo" ||
+    normalized === "apostolo" ||
+    normalized === "missionario" ||
+    normalized === "pregador" ||
+    normalized === "lider"
+  ) {
+    return normalized;
+  }
+
+  return null;
 }
 
 export async function assignProfileToChurchAction(formData: FormData) {
@@ -156,6 +195,222 @@ export async function removeProfileFromChurchAction(formData: FormData) {
           : "update_failed";
     redirect(appendQuery(returnTo, { error }));
   }
+
+  redirect(appendQuery(returnTo, { saved: "1" }));
+}
+
+export async function promoteToChurchAdminAction(formData: FormData) {
+  "use server";
+
+  try {
+    await createClient();
+  } catch (err) {
+    const missing = extractMissingEnvFromError(err);
+    const url = missing
+      ? `/admin/login?error=config&missing=${encodeURIComponent(missing)}`
+      : "/admin/login?error=config";
+    redirect(url);
+  }
+
+  await requireAdmin();
+
+  const profileId = getFormString(formData, "profile_id").trim();
+  const returnTo = safeReturnTo(getFormString(formData, "return_to"));
+  if (!profileId) redirect(appendQuery(returnTo, { error: "invalid" }));
+
+  try {
+    const churchService = new ChurchService();
+    await churchService.promoteUserToChurchAdmin(profileId);
+  } catch (err) {
+    const message =
+      err && typeof err === "object" && "message" in err && typeof err.message === "string"
+        ? err.message
+        : "";
+    const m = message.trim();
+    if (m === churchAdminOptionMessage) {
+      redirect(appendQuery(returnTo, { error: "church_admin_not_allowed", reason: m }));
+    }
+    redirect(appendQuery(returnTo, { error: "update_failed", reason: m || "Falha ao promover." }));
+  }
+
+  redirect(appendQuery(returnTo, { saved: "1" }));
+}
+
+export async function demoteFromChurchAdminAction(formData: FormData) {
+  "use server";
+
+  try {
+    await createClient();
+  } catch (err) {
+    const missing = extractMissingEnvFromError(err);
+    const url = missing
+      ? `/admin/login?error=config&missing=${encodeURIComponent(missing)}`
+      : "/admin/login?error=config";
+    redirect(url);
+  }
+
+  await requireAdmin();
+
+  const profileId = getFormString(formData, "profile_id").trim();
+  const returnTo = safeReturnTo(getFormString(formData, "return_to"));
+  if (!profileId) redirect(appendQuery(returnTo, { error: "invalid" }));
+
+  try {
+    const churchService = new ChurchService();
+    await churchService.demoteUserFromChurchAdmin(profileId);
+  } catch (err) {
+    const message =
+      err && typeof err === "object" && "message" in err && typeof err.message === "string"
+        ? err.message
+        : "";
+    const m = message.trim();
+    if (m === businessOnlyActionMessage) {
+      redirect(appendQuery(returnTo, { error: "business_only", reason: m }));
+    }
+    if (m === "Esta igreja precisa ter pelo menos um administrador ativo.") {
+      redirect(appendQuery(returnTo, { error: "last_admin", reason: m }));
+    }
+    redirect(appendQuery(returnTo, { error: "update_failed", reason: m || "Falha ao rebaixar." }));
+  }
+
+  redirect(appendQuery(returnTo, { saved: "1" }));
+}
+
+export async function createChurchUserAction(formData: FormData) {
+  "use server";
+
+  try {
+    await createClient();
+  } catch (err) {
+    const missing = extractMissingEnvFromError(err);
+    const url = missing
+      ? `/admin/login?error=config&missing=${encodeURIComponent(missing)}`
+      : "/admin/login?error=config";
+    redirect(url);
+  }
+
+  await requireAdmin();
+
+  const returnTo = safeReturnTo(getFormString(formData, "return_to"));
+  const name = getFormString(formData, "name").trim();
+  const emailRaw = getFormString(formData, "email");
+  const email = normalizeEmail(emailRaw);
+  const ministryTitle = getFormString(formData, "ministry_title").trim();
+  const normalizedMinistryTitle = normalizeMinistryTitle(ministryTitle);
+  const password = getFormString(formData, "password");
+  const churchId = getFormString(formData, "church_id").trim();
+  const accessType = getFormString(formData, "access_type").trim();
+  const desiredRole = accessType === "church_admin" ? "church_admin" : "leader";
+
+  if (!name || !email || !password || password.length < 6 || !churchId) {
+    redirect(appendQuery(returnTo, { error: "invalid" }));
+  }
+
+  const service = createServiceRoleClient();
+  const { data: church } = await service
+    .from("churches")
+    .select("id,status,plan_type,plan_status")
+    .eq("id", churchId)
+    .maybeSingle<{ id: string; status: string; plan_type: string | null; plan_status: string | null }>();
+
+  const businessActive =
+    Boolean(church?.id) &&
+    String(church?.status ?? "") === "active" &&
+    String(church?.plan_type ?? "") === "business" &&
+    String(church?.plan_status ?? "") === "active";
+
+  if (!businessActive) {
+    redirect(appendQuery(returnTo, { error: "business_only", reason: businessOnlyActionMessage }));
+  }
+
+  const { data: existingProfile } = await service
+    .from("profiles")
+    .select("id,auth_user_id,role,email")
+    .ilike("email", email)
+    .maybeSingle<{ id: string; auth_user_id: string; role: string; email: string }>();
+
+  if (existingProfile?.id) {
+    if (String(existingProfile.role) === "admin") {
+      redirect(appendQuery(returnTo, { error: "church_admin_not_allowed", reason: churchAdminOptionMessage }));
+    }
+
+    const patch: Record<string, unknown> = {
+      church_id: churchId,
+      role: desiredRole,
+      status: "active",
+      ministry_title: normalizedMinistryTitle,
+      display_name: name,
+      name,
+      church_membership_source: "admin_global",
+      church_membership_confirmed_at: new Date().toISOString(),
+    };
+
+    const { error: updateError } = await service.from("profiles").update(patch).eq("id", existingProfile.id);
+    if (updateError) redirect(appendQuery(returnTo, { error: "update_failed" }));
+    redirect(appendQuery(returnTo, { saved: "1" }));
+  }
+
+  const created = await service.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { display_name: name, ministry_title: ministryTitle || null },
+  });
+
+  if (created.error || !created.data.user?.id) {
+    const msg = (created.error?.message || "").trim();
+    if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("registered")) {
+      const { data: retryProfile } = await service
+        .from("profiles")
+        .select("id,role")
+        .ilike("email", email)
+        .maybeSingle<{ id: string; role: string }>();
+      if (!retryProfile?.id) redirect(appendQuery(returnTo, { error: "update_failed" }));
+      if (String(retryProfile.role) === "admin") {
+        redirect(appendQuery(returnTo, { error: "church_admin_not_allowed", reason: churchAdminOptionMessage }));
+      }
+      const patch: Record<string, unknown> = {
+        church_id: churchId,
+        role: desiredRole,
+        status: "active",
+        ministry_title: normalizedMinistryTitle,
+        display_name: name,
+        name,
+        church_membership_source: "admin_global",
+        church_membership_confirmed_at: new Date().toISOString(),
+      };
+      const { error: updateError } = await service.from("profiles").update(patch).eq("id", retryProfile.id);
+      if (updateError) redirect(appendQuery(returnTo, { error: "update_failed" }));
+      redirect(appendQuery(returnTo, { saved: "1" }));
+    }
+    redirect(appendQuery(returnTo, { error: "update_failed", reason: msg }));
+  }
+
+  const userId = created.data.user.id;
+  const { error: insertError } = await service
+    .from("profiles")
+    .upsert(
+      {
+        auth_user_id: userId,
+        name,
+        display_name: name,
+        email,
+        ministry_title: normalizedMinistryTitle,
+        role: desiredRole,
+        status: "active",
+        church_id: churchId,
+        church_membership_source: "admin_global",
+        church_membership_confirmed_at: new Date().toISOString(),
+      },
+      { onConflict: "auth_user_id" },
+    );
+
+  if (insertError) {
+    await service.auth.admin.deleteUser(userId);
+    redirect(appendQuery(returnTo, { error: "update_failed" }));
+  }
+
+  await service.from("subscriptions").insert({ leader_id: userId, plan: "free", status: "free" });
 
   redirect(appendQuery(returnTo, { saved: "1" }));
 }
@@ -250,6 +505,7 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
   const showInactive = getString(sp, "showInactive")?.trim() === "1";
   const error = getString(sp, "error")?.trim() ?? "";
   const saved = getString(sp, "saved")?.trim() === "1";
+  const reason = getString(sp, "reason")?.trim() ?? "";
 
   try {
     await createClient();
@@ -272,8 +528,10 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
 
   let leadersQuery = service
     .from("profiles")
-    .select("id,auth_user_id,name,display_name,email,ministry_title,status,church_id,created_at,churches(name,status)")
-    .eq("role", "leader")
+    .select(
+      "id,auth_user_id,name,display_name,email,ministry_title,role,status,church_id,created_at,churches(name,status,plan_type,plan_status)",
+    )
+    .in("role", ["leader", "church_admin"])
     .order("display_name", { ascending: true })
     .limit(250);
 
@@ -309,6 +567,9 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
   const allChurches = churchesResult.ok ? churchesResult.items : [];
   const activeChurches = allChurches.filter((c) => c.status === "active");
   const assignOptions = showInactive ? allChurches : activeChurches;
+  const businessActiveChurches = allChurches.filter(
+    (c) => c.status === "active" && c.plan_type === "business" && c.plan_status === "active",
+  );
 
   const subscriptionMap = new Map<string, SubscriptionRow>();
   if (authUserIds.length) {
@@ -416,9 +677,15 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
                 ? "Igreja não encontrada."
                 : error === "church_inactive"
                   ? "Igreja inativa não pode ser usada para novo vínculo (habilite “Mostrar inativas” para permitir)."
+              : error === "business_only"
+                ? reason || businessOnlyActionMessage
+                : error === "church_admin_not_allowed"
+                  ? reason || churchAdminOptionMessage
+                  : error === "last_admin"
+                    ? reason || "Esta igreja precisa ter pelo menos um administrador ativo."
                   : error === "not_associated"
                     ? "Este usuário não possui igreja vinculada."
-                    : "Não foi possível salvar a alteração."}
+                : reason || "Não foi possível salvar a alteração."}
         </div>
       ) : null}
 
@@ -439,6 +706,79 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
           <p className="text-xs font-medium text-[var(--mt-muted)]">Pendentes</p>
           <p className="mt-2 text-2xl font-semibold">{summary.pending}</p>
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-5">
+        <h3 className="text-base font-semibold">Adicionar líder</h3>
+        <p className="mt-1 text-sm text-[var(--mt-muted)]">Disponível apenas para igrejas com Plano Business ativo.</p>
+        <form action={createChurchUserAction} className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-6">
+          <input
+            type="hidden"
+            name="return_to"
+            value={appendQuery("/admin/lideres", {
+              q,
+              status: statusFilter,
+              church: churchFilter,
+              showInactive: showInactive ? "1" : "0",
+            })}
+          />
+          <input
+            name="name"
+            required
+            placeholder="Nome"
+            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2 sm:col-span-2"
+          />
+          <input
+            name="email"
+            type="email"
+            required
+            placeholder="E-mail"
+            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2 sm:col-span-2"
+          />
+          <input
+            name="ministry_title"
+            placeholder="Função (opcional)"
+            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2 sm:col-span-2"
+          />
+          <input
+            name="password"
+            type="password"
+            required
+            minLength={6}
+            placeholder="Senha temporária"
+            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2 sm:col-span-2"
+          />
+          <select
+            name="church_id"
+            required
+            defaultValue=""
+            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2 sm:col-span-2"
+          >
+            <option value="" disabled>
+              Selecione igreja
+            </option>
+            {businessActiveChurches.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <select
+            name="access_type"
+            required
+            defaultValue="leader"
+            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2 sm:col-span-1"
+          >
+            <option value="leader">Líder</option>
+            <option value="church_admin">Admin da Igreja</option>
+          </select>
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--mt-navy)] px-5 text-sm font-semibold text-white hover:opacity-95 sm:col-span-1"
+          >
+            Adicionar
+          </button>
+        </form>
       </section>
 
       <form className="flex flex-col gap-3 rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-5 sm:flex-row sm:flex-wrap sm:items-end">
@@ -536,29 +876,92 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
               const status = typeof l.status === "string" ? l.status : "active";
               const baseName = (l.display_name ?? l.name ?? "").trim();
               const leaderName = formatLeaderDisplayName(l.ministry_title ?? null, baseName) || baseName || "Líder";
+              const role = typeof l.role === "string" ? l.role : "leader";
+              const churchPlanType =
+                l.churches && typeof l.churches.plan_type === "string" ? l.churches.plan_type : null;
+              const churchPlanStatus =
+                l.churches && typeof l.churches.plan_status === "string" ? l.churches.plan_status : null;
+              const isBusinessActiveChurch =
+                Boolean(l.church_id) &&
+                churchStatus === "active" &&
+                churchPlanType === "business" &&
+                churchPlanStatus === "active";
 
               return (
-                <div key={l.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-semibold">{leaderName}</p>
-                    <p className="mt-1 text-sm text-[var(--mt-muted)]">
-                      {l.email} • {status}
-                      {churchName ? ` • ${churchName}${churchStatus === "inactive" ? " (inativa)" : ""}` : ""}
-                    </p>
+                <div
+                  key={l.id}
+                  className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-12 sm:items-center"
+                >
+                  <div className="min-w-0 sm:col-span-4">
+                    <div className="relative min-w-0">
+                      <div className="group relative min-w-0">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <p className="truncate text-base font-semibold">{leaderName}</p>
+                          <span
+                            tabIndex={0}
+                            className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] text-xs font-semibold text-[var(--mt-text)] outline-none ring-[var(--mt-navy)] focus:ring-2"
+                            title="Ver detalhes"
+                          >
+                            i
+                          </span>
+                        </div>
+
+                        <p className="mt-1 truncate text-sm text-[var(--mt-muted)]">{l.email}</p>
+
+                        <div className="pointer-events-none absolute left-0 top-full z-20 mt-2 hidden w-[min(28rem,90vw)] rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4 text-xs text-[var(--mt-text)] shadow-xl group-hover:block group-focus-within:block">
+                          <div className="grid grid-cols-1 gap-2">
+                            <div className="flex flex-wrap gap-x-2 gap-y-1">
+                              <span className="font-semibold">Status:</span>
+                              <span>{status}</span>
+                              <span className="opacity-70">•</span>
+                              <span className="font-semibold">Acesso:</span>
+                              <span>{role === "church_admin" ? "Admin da Igreja" : "Líder"}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-x-2 gap-y-1">
+                              <span className="font-semibold">Igreja:</span>
+                              <span>{churchName ?? "—"}</span>
+                              {churchStatus ? (
+                                <>
+                                  <span className="opacity-70">•</span>
+                                  <span className="font-semibold">Status:</span>
+                                  <span>{churchStatus}</span>
+                                </>
+                              ) : null}
+                            </div>
+                            <div className="flex flex-wrap gap-x-2 gap-y-1">
+                              <span className="font-semibold">Plano Igreja:</span>
+                              <span>
+                                {churchPlanType ?? "—"}/{churchPlanStatus ?? "—"}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap gap-x-2 gap-y-1">
+                              <span className="font-semibold">Assinatura líder:</span>
+                              <span>
+                                {planLabel} • {subStatus}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 text-sm">
-                    <span className="rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 py-2 font-semibold text-[var(--mt-text)]">
+                  <div className="flex min-w-0 flex-wrap items-center gap-3 text-sm sm:col-span-4">
+                    <span className="max-w-full truncate rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 py-2 font-semibold text-[var(--mt-text)]">
                       {planLabel} • {subStatus}
                     </span>
-                    <span className="rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 py-2 font-semibold text-[var(--mt-text)]">
+                    <span className="max-w-full truncate rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 py-2 font-semibold text-[var(--mt-text)]">
                       {effective.kind === "unlimited"
                         ? "Pré-sermões: ilimitado"
                         : `Ciclo: ${usedInCycle}/${effective.limit} • restam ${remaining}`}
                       {window ? ` • renova ${window.endLabel}` : ""}
                     </span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <form action={assignProfileToChurchAction} className="flex items-center gap-2">
+                  <div className="sm:col-span-4">
+                    <div className="grid gap-2 sm:justify-items-end">
+                      <form
+                        action={assignProfileToChurchAction}
+                        className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-[minmax(0,16rem)_auto] sm:items-center"
+                      >
                       <input type="hidden" name="profile_id" value={l.id} />
                       <input type="hidden" name="allow_inactive" value={showInactive ? "1" : "0"} />
                       <input
@@ -574,7 +977,7 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
                       <select
                         name="church_id"
                         defaultValue={l.church_id ?? ""}
-                        className="h-10 max-w-[16rem] rounded-xl border border-[var(--mt-border)] bg-transparent px-3 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2"
+                        className="h-10 w-full rounded-xl border border-[var(--mt-border)] bg-transparent px-3 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2"
                       >
                         <option value="">Selecione igreja</option>
                         {assignOptions.map((c) => (
@@ -586,31 +989,78 @@ export default async function AdminLideresPage({ searchParams }: AdminLeadersPag
                       </select>
                       <button
                         type="submit"
-                        className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--mt-navy)] px-4 text-sm font-semibold text-white hover:opacity-95"
+                        className="inline-flex h-10 w-full items-center justify-center rounded-xl bg-[var(--mt-navy)] px-4 text-sm font-semibold text-white hover:opacity-95 sm:w-auto"
                       >
                         Vincular
                       </button>
                     </form>
-                    <form action={removeProfileFromChurchAction}>
-                      <input type="hidden" name="profile_id" value={l.id} />
-                      <input
-                        type="hidden"
-                        name="return_to"
-                        value={appendQuery("/admin/lideres", {
-                          q,
-                          status: statusFilter,
-                          church: churchFilter,
-                          showInactive: showInactive ? "1" : "0",
-                        })}
-                      />
-                      <button
-                        type="submit"
-                        disabled={!l.church_id}
-                        className="inline-flex h-10 items-center justify-center rounded-xl border border-[var(--mt-border)] bg-transparent px-4 text-sm font-semibold text-[var(--mt-text)] hover:bg-[var(--mt-surface)] disabled:opacity-50"
-                      >
-                        Remover
-                      </button>
-                    </form>
+                      <div className="flex w-full flex-wrap items-center justify-end gap-2">
+                        <form action={removeProfileFromChurchAction}>
+                          <input type="hidden" name="profile_id" value={l.id} />
+                          <input
+                            type="hidden"
+                            name="return_to"
+                            value={appendQuery("/admin/lideres", {
+                              q,
+                              status: statusFilter,
+                              church: churchFilter,
+                              showInactive: showInactive ? "1" : "0",
+                            })}
+                          />
+                          <button
+                            type="submit"
+                            disabled={!l.church_id}
+                            className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-[var(--mt-border)] bg-transparent px-4 text-sm font-semibold text-[var(--mt-text)] hover:bg-[var(--mt-surface)] disabled:opacity-50 sm:w-auto"
+                          >
+                            Remover
+                          </button>
+                        </form>
+
+                        {role === "leader" && isBusinessActiveChurch ? (
+                          <form action={promoteToChurchAdminAction}>
+                            <input type="hidden" name="profile_id" value={l.id} />
+                            <input
+                              type="hidden"
+                              name="return_to"
+                              value={appendQuery("/admin/lideres", {
+                                q,
+                                status: statusFilter,
+                                church: churchFilter,
+                                showInactive: showInactive ? "1" : "0",
+                              })}
+                            />
+                            <button
+                              type="submit"
+                              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-[var(--mt-border)] bg-transparent px-4 text-sm font-semibold text-[var(--mt-text)] hover:bg-[var(--mt-surface)] sm:w-auto"
+                            >
+                              Tornar Admin da Igreja
+                            </button>
+                          </form>
+                        ) : null}
+
+                        {role === "church_admin" ? (
+                          <form action={demoteFromChurchAdminAction}>
+                            <input type="hidden" name="profile_id" value={l.id} />
+                            <input
+                              type="hidden"
+                              name="return_to"
+                              value={appendQuery("/admin/lideres", {
+                                q,
+                                status: statusFilter,
+                                church: churchFilter,
+                                showInactive: showInactive ? "1" : "0",
+                              })}
+                            />
+                            <button
+                              type="submit"
+                              className="inline-flex h-10 w-full items-center justify-center rounded-xl border border-[var(--mt-border)] bg-transparent px-4 text-sm font-semibold text-[var(--mt-text)] hover:bg-[var(--mt-surface)] sm:w-auto"
+                            >
+                              Remover Admin da Igreja
+                            </button>
+                          </form>
+                        ) : null}
+                      </div>
+                    </div>
                   </div>
                 </div>
               );

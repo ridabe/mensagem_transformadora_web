@@ -9,8 +9,10 @@ interface ChurchAreaLayoutProps {
 
 export default async function ChurchAreaLayout({ children }: ChurchAreaLayoutProps) {
   const churchService = new ChurchService()
+  let churchName = 'Igreja'
   try {
-    await churchService.assertChurchAdmin()
+    const { church } = await churchService.assertChurchAdmin()
+    churchName = church?.name?.trim() ? church.name.trim() : 'Igreja'
   } catch {
     redirect('/lider') // Redirecionar para área do líder se não for church_admin
   }
@@ -23,7 +25,7 @@ export default async function ChurchAreaLayout({ children }: ChurchAreaLayoutPro
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <Link href="/igreja" className="text-xl font-bold text-gray-900">
-                Área da Igreja
+                Área da Igreja • {churchName}
               </Link>
             </div>
             <nav className="flex space-x-8">

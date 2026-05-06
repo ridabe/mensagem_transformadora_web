@@ -1,3 +1,5 @@
+'use client'
+
 import { deactivateChurchPreacher, demoteChurchAdmin, removeChurchPreacher, promoteChurchAdmin } from '@/app/igreja/preleitores/actions'
 import ChurchRoleBadge from './ChurchRoleBadge'
 
@@ -13,9 +15,12 @@ type Profile = {
 
 interface ChurchPreachersTableProps {
   preachers: Profile[]
+  canSetChurchAdminRole?: boolean
 }
 
-export default function ChurchPreachersTable({ preachers }: ChurchPreachersTableProps) {
+export default function ChurchPreachersTable({ preachers, canSetChurchAdminRole }: ChurchPreachersTableProps) {
+  const showChurchAdminActions = canSetChurchAdminRole === true
+
   return (
     <div className="bg-white shadow overflow-hidden sm:rounded-md">
       <ul className="divide-y divide-gray-200">
@@ -75,7 +80,7 @@ export default function ChurchPreachersTable({ preachers }: ChurchPreachersTable
                               Remover admin da igreja
                             </button>
                           </form>
-                        ) : (
+                        ) : showChurchAdminActions ? (
                           <form action={promoteChurchAdmin}>
                             <input type="hidden" name="preacherId" value={preacher.id} />
                             <button
@@ -90,7 +95,7 @@ export default function ChurchPreachersTable({ preachers }: ChurchPreachersTable
                               Tornar admin da igreja
                             </button>
                           </form>
-                        )}
+                        ) : null}
                         <form action={deactivateChurchPreacher}>
                           <input type="hidden" name="preacherId" value={preacher.id} />
                           <button

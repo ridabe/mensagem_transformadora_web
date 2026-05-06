@@ -5,7 +5,9 @@ import EmptyPreachersState from '@/components/features/church/EmptyPreachersStat
 
 export default async function ChurchPreachersPage() {
   const churchService = new ChurchService()
-  await churchService.assertChurchAdmin()
+  const { church } = await churchService.assertChurchAdmin()
+  const canSetChurchAdminRole =
+    church.status === 'active' && church.plan_type === 'business' && church.plan_status === 'active'
 
   const preachers = await churchService.getChurchPreachers()
 
@@ -13,9 +15,9 @@ export default async function ChurchPreachersPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Preleitores</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Preleitores — {church.name}</h1>
           <p className="text-gray-600 mt-1">
-            Gerencie os preleitores da sua igreja
+            Gerencie os preleitores da igreja {church.name}
           </p>
         </div>
         <Link
@@ -27,9 +29,9 @@ export default async function ChurchPreachersPage() {
       </div>
 
       {preachers.length === 0 ? (
-        <EmptyPreachersState />
+        <EmptyPreachersState churchName={church.name} />
       ) : (
-        <ChurchPreachersTable preachers={preachers} />
+        <ChurchPreachersTable preachers={preachers} canSetChurchAdminRole={canSetChurchAdminRole} />
       )}
     </div>
   )

@@ -76,6 +76,7 @@ export async function login(formData: FormData) {
   }
 
   if (profile.role === "admin") redirect("/admin/dashboard");
+  if (profile.role === "church_admin") redirect("/igreja/dashboard");
   redirect("/lider/sermoes");
 }
 

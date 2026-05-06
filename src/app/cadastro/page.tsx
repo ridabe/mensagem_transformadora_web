@@ -3,7 +3,6 @@ import Link from "next/link";
 import { signup } from "./actions";
 
 import { SubmitButton } from "./submit-button";
-import { createClient } from "@/lib/supabase/server";
 
 type SignupPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -25,25 +24,6 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
   const missing = getString(sp, "missing");
   const reason = getString(sp, "reason");
 
-  let churches: { id: string; name: string; city: string | null; state: string | null }[] = [];
-  let churchesError: string | null = null;
-  try {
-    const supabase = await createClient();
-    const { data, error: loadError } = await supabase
-      .from("churches")
-      .select("id,name,city,state")
-      .eq("status", "active")
-      .order("name", { ascending: true });
-    if (loadError) churchesError = "Não foi possível carregar a lista de igrejas.";
-    churches = (data ?? []) as typeof churches;
-  } catch (err) {
-    const message =
-      err && typeof err === "object" && "message" in err && typeof err.message === "string"
-        ? err.message
-        : "Supabase não está configurado no ambiente.";
-    churchesError = message;
-  }
-
   const errorMessage =
     error === "ministry_title"
       ? "Selecione sua função ministerial."
@@ -55,8 +35,6 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
           ? "Informe uma senha com pelo menos 6 caracteres."
           : error === "terms"
             ? "Você precisa aceitar os Termos de Uso e a Política de Privacidade."
-          : error === "church"
-            ? "Selecione uma igreja válida."
           : error === "signup"
             ? `Não foi possível criar sua conta.${reason ? ` Motivo: ${reason}` : " Verifique os dados e tente novamente."}`
             : error === "profile"
@@ -188,32 +166,11 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
             </div>
 
             <div>
-              <label htmlFor="church_id" className="form-label">
-                Igreja
-              </label>
-              <select
-                id="church_id"
-                name="church_id"
-                required
-                className="form-input w-full"
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  Selecione sua igreja
-                </option>
-                {churches.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                    {c.city || c.state ? ` • ${[c.city, c.state].filter(Boolean).join(" / ")}` : ""}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-[var(--mt-blue-light)] mt-2">
-                Não encontrou sua igreja? Entre em contato com o administrador para solicitar o cadastro.
-              </p>
-              {churchesError ? (
-                <p className="text-xs text-red-600 dark:text-red-400 mt-2">{churchesError}</p>
-              ) : null}
+              <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-blue-medium)]/30 p-4">
+                <p className="text-sm leading-6 text-[var(--mt-blue-light)]">
+                  Faz parte de uma igreja com plano Business? Peça um convite ao administrador da sua igreja.
+                </p>
+              </div>
             </div>
 
             <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-blue-medium)]/30 p-4">

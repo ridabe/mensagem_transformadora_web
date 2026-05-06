@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 
-export type ProfileRole = "admin" | "leader";
+export type ProfileRole = "admin" | "leader" | "church_admin";
 export type ProfileStatus = "active" | "blocked" | "pending";
 
 export type CurrentProfile = {
@@ -18,7 +18,7 @@ export type CurrentProfile = {
 };
 
 function normalizeRole(value: unknown): ProfileRole | null {
-  return value === "admin" || value === "leader" ? value : null;
+  return value === "admin" || value === "leader" || value === "church_admin" ? value : null;
 }
 
 function normalizeStatus(value: unknown): ProfileStatus | null {
@@ -32,12 +32,6 @@ function getDisplayName(user: { email?: string | null; user_metadata?: Record<st
       : null;
   const fromEmail = user.email ? user.email.split("@")[0] : null;
   return (raw?.trim() || fromEmail?.trim() || "Usuário").trim();
-}
-
-function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    value,
-  );
 }
 
 function getErrorText(err: unknown): string | null {
@@ -116,23 +110,6 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
         : null;
     const ministryTitle = normalizeMinistryTitleValue(ministryTitleCandidate);
 
-    const churchIdCandidate =
-      user.user_metadata && typeof user.user_metadata.church_id === "string"
-        ? user.user_metadata.church_id.trim()
-        : "";
-    const churchId = isUuid(churchIdCandidate) ? churchIdCandidate : null;
-
-    let churchOkId: string | null = null;
-    if (churchId) {
-      const { data: churchRow } = await supabase
-        .from("churches")
-        .select("id")
-        .eq("id", churchId)
-        .eq("status", "active")
-        .maybeSingle();
-      if (churchRow?.id) churchOkId = String(churchRow.id);
-    }
-
     const displayName = getDisplayName(user);
 
     const created = await supabase
@@ -144,7 +121,7 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
         email: user.email,
         role: "leader",
         status: "active",
-        church_id: churchOkId,
+        church_id: null,
         ministry_title: ministryTitle,
       })
       .select("id,auth_user_id,name,display_name,email,role,status,church_id,ministry_title")
@@ -238,24 +215,6 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
     }
   }
 
-  if (!row.church_id) {
-    const churchIdCandidate =
-      user.user_metadata && typeof user.user_metadata.church_id === "string"
-        ? user.user_metadata.church_id.trim()
-        : "";
-    if (isUuid(churchIdCandidate)) {
-      const { data: churchRow } = await supabase
-        .from("churches")
-        .select("id")
-        .eq("id", churchIdCandidate)
-        .eq("status", "active")
-        .maybeSingle();
-      if (churchRow?.id) {
-        await supabase.from("profiles").update({ church_id: churchIdCandidate }).eq("id", row.id);
-      }
-    }
-  }
-
   const { data: existingSubscription } = await supabase
     .from("subscriptions")
     .select("id")
@@ -286,7 +245,10 @@ export async function requireAdmin(): Promise<CurrentProfile> {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/admin/login");
   if (profile.status === "blocked") redirect("/admin/login?error=blocked");
-  if (profile.role !== "admin") redirect("/lider/sermoes");
+  if (profile.role !== "admin") {
+    if (profile.role === "church_admin") redirect("/igreja/dashboard");
+    redirect("/lider/sermoes");
+  }
   return profile;
 }
 
@@ -294,7 +256,8 @@ export async function requireLeader(): Promise<CurrentProfile> {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
   if (profile.status === "blocked") redirect("/login?error=blocked");
-  if (profile.role !== "leader") redirect("/admin/dashboard");
+  if (profile.role === "admin") redirect("/admin/dashboard");
+  if (profile.role !== "leader" && profile.role !== "church_admin") redirect("/login");
   return profile;
 }
 
@@ -534,6 +497,39 @@ export async function getCurrentUsage(profileId: string): Promise<CurrentUsageIn
  * - past_due: permite durante tolerância (MT_PAST_DUE_GRACE_DAYS, default 3).
  */
 export async function canCreatePreSermon(profileId: string): Promise<CanCreatePreSermonResult> {
+  const safeProfileId = profileId?.trim() ? profileId.trim() : "";
+  if (safeProfileId) {
+    const service = createServiceRoleClient();
+    const { data: profileRow } = await service
+      .from("profiles")
+      .select("church_id")
+      .eq("auth_user_id", safeProfileId)
+      .maybeSingle<{ church_id: string | null }>();
+
+    const churchId = profileRow?.church_id ? String(profileRow.church_id) : null;
+    if (churchId) {
+      const { data: churchRow } = await service
+        .from("churches")
+        .select("id,status,plan_type,plan_status")
+        .eq("id", churchId)
+        .maybeSingle<{ id: string; status: string; plan_type: string | null; plan_status: string | null }>();
+
+      const isBusinessUnlimited =
+        Boolean(churchRow?.id) &&
+        String(churchRow?.status ?? "") === "active" &&
+        String(churchRow?.plan_type ?? "") === "business" &&
+        String(churchRow?.plan_status ?? "") === "active";
+
+      if (isBusinessUnlimited) {
+        const [subscription, usage] = await Promise.all([
+          getCurrentSubscription(safeProfileId),
+          getCurrentUsage(safeProfileId),
+        ]);
+        return { allowed: true, subscription: { ...subscription, monthly_pre_sermon_limit: null }, usage };
+      }
+    }
+  }
+
   const subscription = await getCurrentSubscription(profileId);
   const usage = await getCurrentUsage(profileId);
 

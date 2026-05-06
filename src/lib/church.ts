@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { buildSiteUrl } from '@/app/api/_shared/slug'
+import crypto from 'node:crypto'
 
 type Profile = {
   id: string
@@ -27,7 +29,31 @@ type Church = {
   updated_at: string
 }
 
+type ChurchInvitationRole = 'leader' | 'church_admin'
+type ChurchInvitationStatus = 'pending' | 'accepted' | 'cancelled' | 'expired'
+
+type ChurchInvitation = {
+  id: string
+  church_id: string
+  invited_by: string
+  email: string
+  name: string | null
+  ministry_title: string | null
+  role: ChurchInvitationRole
+  status: ChurchInvitationStatus
+  token: string
+  expires_at: string | null
+  accepted_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 export class ChurchService {
+  private readonly churchAdminOptionMessage =
+    'Esta opção só está disponível para líderes associados a uma igreja com Plano Business ativo.'
+  private readonly businessOnlyActionMessage =
+    'Essa ação está disponível apenas para igrejas com Plano Business ativo.'
+
   private async getSupabase() {
     return await createClient()
   }
@@ -74,8 +100,8 @@ export class ChurchService {
       throw new Error('Igreja não encontrada')
     }
 
-    if (church.plan_type !== 'business' || church.plan_status !== 'active') {
-      throw new Error('Acesso negado: igreja não possui plano Business ativo')
+    if (church.status !== 'active' || church.plan_type !== 'business' || church.plan_status !== 'active') {
+      throw new Error(this.businessOnlyActionMessage)
     }
 
     return { profile, church }
@@ -105,6 +131,204 @@ export class ChurchService {
     }
 
     return church
+  }
+
+  private normalizeInvitationRole(value: unknown): ChurchInvitationRole | null {
+    if (value === 'leader' || value === 'church_admin') return value
+    return null
+  }
+
+  private normalizeInvitationStatus(value: unknown): ChurchInvitationStatus | null {
+    if (value === 'pending' || value === 'accepted' || value === 'cancelled' || value === 'expired') return value
+    return null
+  }
+
+  private normalizeEmail(value: unknown): string | null {
+    const raw = typeof value === 'string' ? value.trim().toLowerCase() : ''
+    if (!raw) return null
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(raw)) return null
+    return raw
+  }
+
+  private normalizeOptionalText(value: unknown): string | null {
+    const raw = typeof value === 'string' ? value.trim() : ''
+    return raw ? raw : null
+  }
+
+  private normalizeMinistryTitle(value: unknown): string | null {
+    const raw = typeof value === 'string' ? value.trim() : ''
+    if (!raw) return null
+
+    const normalized = raw
+      .normalize('NFD')
+      .replaceAll(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replaceAll(/[^a-z]/g, '')
+
+    if (
+      normalized === 'pastor' ||
+      normalized === 'diacono' ||
+      normalized === 'bispo' ||
+      normalized === 'apostolo' ||
+      normalized === 'missionario' ||
+      normalized === 'pregador' ||
+      normalized === 'lider'
+    ) {
+      return normalized
+    }
+
+    return null
+  }
+
+  private normalizeExpiresAt(value: unknown): string | null {
+    if (value === null || value === undefined) return null
+    if (value instanceof Date) {
+      if (!Number.isFinite(value.getTime())) return null
+      return value.toISOString()
+    }
+    if (typeof value === 'string') {
+      const d = new Date(value)
+      if (!Number.isFinite(d.getTime())) return null
+      return d.toISOString()
+    }
+    return null
+  }
+
+  private isExpired(expiresAtIso: string | null): boolean {
+    if (!expiresAtIso) return false
+    const d = new Date(expiresAtIso)
+    if (!Number.isFinite(d.getTime())) return false
+    return d.getTime() <= Date.now()
+  }
+
+  private mapInvitationRow(row: Record<string, unknown>): ChurchInvitation {
+    const role = this.normalizeInvitationRole(row['role']) ?? 'leader'
+    const status = this.normalizeInvitationStatus(row['status']) ?? 'pending'
+    const email = String(row['email'] ?? '').trim().toLowerCase()
+    return {
+      id: String(row['id']),
+      church_id: String(row['church_id']),
+      invited_by: String(row['invited_by']),
+      email,
+      name: typeof row['name'] === 'string' ? String(row['name']) : row['name'] === null || row['name'] === undefined ? null : String(row['name']),
+      ministry_title:
+        typeof row['ministry_title'] === 'string'
+          ? String(row['ministry_title'])
+          : row['ministry_title'] === null || row['ministry_title'] === undefined
+            ? null
+            : String(row['ministry_title']),
+      role,
+      status,
+      token: String(row['token']),
+      expires_at: row['expires_at'] ? String(row['expires_at']) : null,
+      accepted_at: row['accepted_at'] ? String(row['accepted_at']) : null,
+      created_at: String(row['created_at']),
+      updated_at: String(row['updated_at']),
+    }
+  }
+
+  async createInvitation(input: {
+    email: string
+    name?: string
+    ministryTitle?: string
+    role?: ChurchInvitationRole
+    expiresAt?: string | Date | null
+  }): Promise<ChurchInvitation> {
+    const { profile, church } = await this.assertChurchAdmin()
+    const supabase = await this.getSupabase()
+
+    const email = this.normalizeEmail(input.email)
+    if (!email) throw new Error('E-mail inválido')
+
+    const role = this.normalizeInvitationRole(input.role) ?? 'leader'
+    const name = this.normalizeOptionalText(input.name)
+    const ministryTitle = this.normalizeOptionalText(input.ministryTitle)
+
+    const expiresAt =
+      input.expiresAt === undefined ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() : this.normalizeExpiresAt(input.expiresAt)
+
+    if (this.isExpired(expiresAt)) throw new Error('Data de expiração inválida')
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const token = crypto.randomBytes(32).toString('base64url')
+      const { data, error } = await supabase
+        .from('church_invitations')
+        .insert({
+          church_id: church.id,
+          invited_by: profile.auth_user_id,
+          email,
+          name,
+          ministry_title: ministryTitle,
+          role,
+          status: 'pending',
+          token,
+          expires_at: expiresAt,
+        })
+        .select('*')
+        .single()
+
+      if (!error && data) return this.mapInvitationRow(data as Record<string, unknown>)
+
+      const err = error && typeof error === 'object' ? (error as Record<string, unknown>) : null
+      const code = err && typeof err['code'] === 'string' ? err['code'] : ''
+      const msg = err && typeof err['message'] === 'string' ? err['message'] : ''
+      const isTokenCollision = code === '23505' && msg.toLowerCase().includes('token')
+      if (!isTokenCollision) throw new Error(msg || 'Erro ao criar convite')
+    }
+
+    throw new Error('Erro ao gerar token de convite')
+  }
+
+  async getInvitationByToken(token: string): Promise<ChurchInvitation | null> {
+    const rawToken = typeof token === 'string' ? token.trim() : ''
+    if (!rawToken) return null
+
+    const service = await this.getAdminSupabase()
+    const { data, error } = await service
+      .from('church_invitations')
+      .select('id,church_id,invited_by,email,name,ministry_title,role,status,token,expires_at,accepted_at,created_at,updated_at')
+      .eq('token', rawToken)
+      .maybeSingle()
+
+    if (error) throw new Error('Erro ao buscar convite')
+    if (!data?.id) return null
+
+    const invitation = this.mapInvitationRow(data as Record<string, unknown>)
+    if (invitation.status !== 'pending') return null
+    if (this.isExpired(invitation.expires_at)) return null
+
+    const { data: church, error: churchError } = await service
+      .from('churches')
+      .select('id,status,plan_type,plan_status')
+      .eq('id', invitation.church_id)
+      .maybeSingle()
+
+    if (churchError || !church?.id) return null
+    if (church.status !== 'active') return null
+    if (church.plan_type !== 'business' || church.plan_status !== 'active') return null
+
+    return invitation
+  }
+
+  async cancelInvitation(invitationId: string): Promise<void> {
+    const { church } = await this.assertChurchAdmin()
+    const supabase = await this.getSupabase()
+
+    const id = typeof invitationId === 'string' ? invitationId.trim() : ''
+    if (!id) throw new Error('Convite inválido')
+
+    const { data, error } = await supabase
+      .from('church_invitations')
+      .update({ status: 'cancelled' })
+      .eq('id', id)
+      .eq('church_id', church.id)
+      .eq('status', 'pending')
+      .select('id')
+      .maybeSingle()
+
+    if (error) throw new Error('Erro ao cancelar convite')
+    if (!data?.id) throw new Error('Convite não encontrado')
   }
 
   /**
@@ -142,9 +366,9 @@ export class ChurchService {
 
   async getChurchMembers(): Promise<Profile[]> {
     const { church } = await this.assertChurchAdmin()
-    const supabase = await this.getSupabase()
+    const adminSupabase = await this.getAdminSupabase()
 
-    const { data: members, error } = await supabase
+    const { data: members, error } = await adminSupabase
       .from('profiles')
       .select('*')
       .eq('church_id', church.id)
@@ -159,9 +383,9 @@ export class ChurchService {
 
   async getChurchAdmins(): Promise<Profile[]> {
     const { church } = await this.assertChurchAdmin()
-    const supabase = await this.getSupabase()
+    const adminSupabase = await this.getAdminSupabase()
 
-    const { data: admins, error } = await supabase
+    const { data: admins, error } = await adminSupabase
       .from('profiles')
       .select('*')
       .eq('church_id', church.id)
@@ -180,13 +404,12 @@ export class ChurchService {
    */
   async getChurchPreachers(): Promise<Profile[]> {
     const { church } = await this.assertChurchAdmin()
-    const supabase = await this.getSupabase()
+    const adminSupabase = await this.getAdminSupabase()
 
-    const { data: preachers, error } = await supabase
+    const { data: preachers, error } = await adminSupabase
       .from('profiles')
       .select('*')
       .eq('church_id', church.id)
-      .neq('role', 'church_admin') // Não incluir outros church_admins na lista
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -204,6 +427,7 @@ export class ChurchService {
     email: string
     ministryTitle?: string
     password: string
+    role?: 'leader' | 'church_admin'
   }): Promise<Profile> {
     const { church } = await this.assertChurchAdmin()
     const adminSupabase = await this.getAdminSupabase()
@@ -214,51 +438,115 @@ export class ChurchService {
       throw new Error('E-mail inválido')
     }
 
-    // Verificar se e-mail já existe
-    const { data: existingUser } = await adminSupabase.auth.admin.listUsers()
-    const userExists = existingUser.users.some(u => u.email === data.email)
-    if (userExists) {
-      throw new Error('E-mail já cadastrado no sistema')
+    const desiredRole = data.role === 'church_admin' ? 'church_admin' : 'leader'
+    const normalizedMinistryTitle = this.normalizeMinistryTitle(data.ministryTitle)
+
+    const { data: existingProfile, error: existingProfileError } = await adminSupabase
+      .from('profiles')
+      .select('id,auth_user_id,role,email,church_id')
+      .ilike('email', data.email.trim())
+      .maybeSingle()
+
+    if (existingProfileError) {
+      throw new Error('Erro ao verificar usuário existente')
     }
 
-    // Criar usuário no Supabase Auth
-    const { data: authUser, error: authError } = await adminSupabase.auth.admin.createUser({
-      email: data.email,
-      password: data.password,
-      email_confirm: true, // Confirmar e-mail automaticamente
-      user_metadata: {
-        name: data.name,
-        ministry_title: data.ministryTitle,
+    if (existingProfile?.id) {
+      const currentRole = typeof existingProfile.role === 'string' ? existingProfile.role : ''
+      if (currentRole === 'admin') {
+        throw new Error(this.churchAdminOptionMessage)
       }
+
+      const existingChurchId = typeof existingProfile.church_id === 'string' ? existingProfile.church_id : null
+      if (existingChurchId && existingChurchId !== church.id) {
+        throw new Error('Acesso negado: só é possível gerenciar usuários da própria igreja')
+      }
+
+      const patch: Record<string, unknown> = {
+        church_id: church.id,
+        role: desiredRole,
+        status: 'active',
+        church_membership_source: 'invitation',
+        church_membership_confirmed_at: new Date().toISOString(),
+      }
+      if (normalizedMinistryTitle) patch.ministry_title = normalizedMinistryTitle
+      if (data.name?.trim()) {
+        patch.display_name = data.name.trim()
+        patch.name = data.name.trim()
+      }
+
+      const { data: updated, error: updateError } = await adminSupabase
+        .from('profiles')
+        .update(patch)
+        .eq('id', String(existingProfile.id))
+        .select('*')
+        .single()
+
+      if (updateError || !updated) {
+        throw new Error('Erro ao atualizar perfil')
+      }
+
+      return updated as Profile
+    }
+
+    const { data: authUser, error: authError } = await adminSupabase.auth.admin.createUser({
+      email: data.email.trim(),
+      password: data.password,
+      email_confirm: true,
+      user_metadata: {
+        display_name: data.name,
+        ministry_title: normalizedMinistryTitle,
+      },
     })
 
     if (authError || !authUser.user) {
       throw new Error('Erro ao criar usuário: ' + authError?.message)
     }
 
-    // Criar perfil
+    const siteUrl = buildSiteUrl()
+    if (!siteUrl) {
+      await adminSupabase.auth.admin.deleteUser(authUser.user.id)
+      throw new Error('Não foi possível enviar o e-mail. URL do site não está configurada.')
+    }
+
+    const supabase = await this.getSupabase()
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(data.email.trim(), {
+      redirectTo: `${siteUrl}/auth/reset-password`,
+    })
+
+    if (resetError) {
+      await adminSupabase.auth.admin.deleteUser(authUser.user.id)
+      throw new Error(
+        'Não foi possível enviar o e-mail para o convidado. Verifique a configuração de e-mail/URL no Supabase.',
+      )
+    }
+
     const { data: newProfile, error: profileError } = await adminSupabase
       .from('profiles')
-      .insert({
-        auth_user_id: authUser.user.id,
-        name: data.name,
-        display_name: data.name,
-        email: data.email,
-        ministry_title: data.ministryTitle,
-        role: 'leader',
-        church_id: church.id,
-        status: 'active',
-      })
+      .upsert(
+        {
+          auth_user_id: authUser.user.id,
+          name: data.name,
+          display_name: data.name,
+          email: data.email.trim().toLowerCase(),
+          ministry_title: normalizedMinistryTitle,
+          role: desiredRole,
+          church_id: church.id,
+          church_membership_source: 'invitation',
+          church_membership_confirmed_at: new Date().toISOString(),
+          status: 'active',
+        },
+        { onConflict: 'auth_user_id' },
+      )
       .select()
       .single()
 
     if (profileError || !newProfile) {
-      // Se falhar, tentar deletar o usuário criado
       await adminSupabase.auth.admin.deleteUser(authUser.user.id)
       throw new Error('Erro ao criar perfil: ' + profileError?.message)
     }
 
-    return newProfile
+    return newProfile as Profile
   }
 
   /**
@@ -266,9 +554,9 @@ export class ChurchService {
    */
   async deactivateChurchPreacher(preacherId: string): Promise<void> {
     const { church } = await this.assertChurchAdmin()
-    const supabase = await this.getSupabase()
+    const adminSupabase = await this.getAdminSupabase()
 
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from('profiles')
       .update({ status: 'blocked' })
       .eq('id', preacherId)
@@ -285,9 +573,9 @@ export class ChurchService {
    */
   async removePreacherFromChurch(preacherId: string): Promise<void> {
     const { church } = await this.assertChurchAdmin()
-    const supabase = await this.getSupabase()
+    const adminSupabase = await this.getAdminSupabase()
 
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from('profiles')
       .update({ church_id: null, status: 'active' })
       .eq('id', preacherId)
@@ -336,51 +624,60 @@ export class ChurchService {
 
   async promoteUserToChurchAdmin(profileId: string): Promise<void> {
     const supabase = await this.getSupabase()
+    const adminSupabase = await this.getAdminSupabase()
     const currentProfile = await this.getCurrentProfile()
-    const targetProfile = await this.getProfileById(profileId)
+    const targetProfile = await adminSupabase
+      .from('profiles')
+      .select('id,auth_user_id,role,church_id,status')
+      .eq('id', profileId)
+      .maybeSingle()
 
-    if (!targetProfile.church_id) {
-      throw new Error('Usuário não pertence a nenhuma igreja')
+    if (targetProfile.error || !targetProfile.data?.id) {
+      throw new Error('Usuário não encontrado')
     }
 
-    if (targetProfile.role === 'admin') {
-      throw new Error('Não é possível promover um Admin Global')
+    const target = targetProfile.data as unknown as Profile
+
+    if (!target.church_id) {
+      throw new Error(this.churchAdminOptionMessage)
+    }
+
+    if (target.role === 'admin') {
+      throw new Error(this.churchAdminOptionMessage)
     }
 
     const { data: church, error: churchError } = await supabase
       .from('churches')
       .select('*')
-      .eq('id', targetProfile.church_id)
+      .eq('id', target.church_id)
       .single()
 
     if (churchError || !church) {
-      throw new Error('Igreja não encontrada')
+      throw new Error(this.churchAdminOptionMessage)
     }
 
-    if (church.status !== 'active') {
-      throw new Error('Igreja não está ativa')
-    }
-
-    if (church.plan_type !== 'business' || church.plan_status !== 'active') {
-      throw new Error('Igreja não possui plano Business ativo')
+    if (church.status !== 'active' || church.plan_type !== 'business' || church.plan_status !== 'active') {
+      throw new Error(this.churchAdminOptionMessage)
     }
 
     if (currentProfile.role === 'leader') {
       throw new Error('Acesso negado: usuário não tem permissão para promover')
     }
 
-    if (currentProfile.role === 'church_admin' && currentProfile.church_id !== targetProfile.church_id) {
+    if (currentProfile.role === 'church_admin' && currentProfile.church_id !== target.church_id) {
       throw new Error('Acesso negado: só é possível promover usuários da própria igreja')
     }
 
-    const { error } = await supabase
+    const { data: updated, error: updateError } = await adminSupabase
       .from('profiles')
       .update({ role: 'church_admin' })
       .eq('id', profileId)
-      .eq('church_id', targetProfile.church_id)
+      .eq('church_id', target.church_id)
+      .select('id')
+      .maybeSingle()
 
-    if (error) {
-      throw new Error('Erro ao promover usuário')
+    if (updateError || !updated?.id) {
+      throw new Error('Não foi possível promover o usuário.')
     }
   }
 
@@ -389,29 +686,54 @@ export class ChurchService {
    */
   async demoteUserFromChurchAdmin(profileId: string): Promise<void> {
     const supabase = await this.getSupabase()
+    const adminSupabase = await this.getAdminSupabase()
     const currentProfile = await this.getCurrentProfile()
-    const targetProfile = await this.getProfileById(profileId)
+    const targetProfile = await adminSupabase
+      .from('profiles')
+      .select('id,auth_user_id,role,church_id,status')
+      .eq('id', profileId)
+      .maybeSingle()
 
-    if (targetProfile.role !== 'church_admin') {
+    if (targetProfile.error || !targetProfile.data?.id) {
+      throw new Error('Usuário não encontrado')
+    }
+
+    const target = targetProfile.data as unknown as Profile
+
+    if (target.role !== 'church_admin') {
       throw new Error('Usuário não é administrador da igreja')
     }
 
-    if (!targetProfile.church_id) {
+    if (!target.church_id) {
       throw new Error('Usuário não pertence a uma igreja')
+    }
+
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('*')
+      .eq('id', target.church_id)
+      .single()
+
+    if (churchError || !church) {
+      throw new Error(this.businessOnlyActionMessage)
+    }
+
+    if (church.status !== 'active' || church.plan_type !== 'business' || church.plan_status !== 'active') {
+      throw new Error(this.businessOnlyActionMessage)
     }
 
     if (currentProfile.role === 'leader') {
       throw new Error('Acesso negado: usuário não tem permissão para remover administrador')
     }
 
-    if (currentProfile.role === 'church_admin' && currentProfile.church_id !== targetProfile.church_id) {
+    if (currentProfile.role === 'church_admin' && currentProfile.church_id !== target.church_id) {
       throw new Error('Acesso negado: só é possível remover administradores da própria igreja')
     }
 
     const { data: activeAdmins, error: activeAdminsError } = await supabase
       .from('profiles')
       .select('id')
-      .eq('church_id', targetProfile.church_id)
+      .eq('church_id', target.church_id)
       .eq('role', 'church_admin')
       .eq('status', 'active')
 
@@ -423,14 +745,16 @@ export class ChurchService {
       throw new Error('Esta igreja precisa ter pelo menos um administrador ativo.')
     }
 
-    const { error } = await supabase
+    const { data: updated, error: updateError } = await adminSupabase
       .from('profiles')
       .update({ role: 'leader' })
       .eq('id', profileId)
       .eq('role', 'church_admin')
+      .select('id')
+      .maybeSingle()
 
-    if (error) {
-      throw new Error('Erro ao rebaixar usuário')
+    if (updateError || !updated?.id) {
+      throw new Error('Não foi possível remover o papel de administrador.')
     }
   }
 }

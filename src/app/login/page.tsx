@@ -24,6 +24,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const current = await getCurrentProfile().catch(() => null);
   if (current && current.status !== "blocked") {
     if (current.role === "admin") redirect("/admin/dashboard");
+    if (current.role === "church_admin") redirect("/igreja/dashboard");
     redirect("/lider/sermoes");
   }
 
