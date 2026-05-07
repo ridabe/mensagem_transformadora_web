@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Projetos\\\\mensagem_transformadora_web\\\\src\" -Recurse -Include \"*.ts\", \"*.tsx\")",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "PowerShell($s = supabase --version 2>&1; $p = psql --version 2>&1; \"supabase: $s\"; \"psql: $p\")",
+      "PowerShell(npm install -g supabase 2>&1)",
+      "PowerShell(winget --version 2>&1)",
+      "PowerShell(scoop --version 2>&1)",
+      "PowerShell(winget install Supabase.CLI --accept-package-agreements --accept-source-agreements 2>&1)",
+      "PowerShell(winget search supabase 2>&1)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Projetos\\\\mensagem_transformadora_web\" -Force)",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "Bash(Format-Table -AutoSize)",
+      "mcp__claude_ai_monday_com__get_user_context",
+      "mcp__claude_ai_monday_com__list_workspaces",
+      "mcp__claude_ai_monday_com__workspace_info",
+      "mcp__claude_ai_monday_com__get_board_info"
+    ]
+  }
+}

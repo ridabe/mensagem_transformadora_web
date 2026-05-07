@@ -201,6 +201,7 @@ export default async function AdminDashboardPage() {
   const [
     { count: publishedCount, error: publishedError },
     { count: privateCount, error: privateError },
+    { count: businessChurchCount, error: businessChurchError },
     { count: leadersTotalCount, error: leadersTotalError },
     { count: leadersActiveCount, error: leadersActiveError },
     { count: leadersPendingCount, error: leadersPendingError },
@@ -214,11 +215,18 @@ export default async function AdminDashboardPage() {
     { data: recentData, error: recentError },
     { data: publishedUpdatedRows, error: publishedUpdatedError },
     { data: privateUpdatedRows, error: privateUpdatedError },
+    { data: businessChurchCreatedRows, error: businessChurchCreatedError },
     { data: leaderCreatedRows, error: leaderCreatedError },
     { data: preCreatedRows, error: preCreatedError },
   ] = await Promise.all([
     service.from("published_sermons").select("id", { count: "exact", head: true }).eq("status", "published"),
     service.from("published_sermons").select("id", { count: "exact", head: true }).eq("visibility", "private"),
+    service
+      .from("churches")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "active")
+      .eq("plan_type", "business")
+      .eq("plan_status", "active"),
     service.from("profiles").select("id", { count: "exact", head: true }).eq("role", "leader"),
     service.from("profiles").select("id", { count: "exact", head: true }).eq("role", "leader").eq("status", "active"),
     service.from("profiles").select("id", { count: "exact", head: true }).eq("role", "leader").eq("status", "pending"),
@@ -247,6 +255,14 @@ export default async function AdminDashboardPage() {
       .gte("updated_at", chartStartIso)
       .limit(5000),
     service
+      .from("churches")
+      .select("created_at")
+      .eq("status", "active")
+      .eq("plan_type", "business")
+      .eq("plan_status", "active")
+      .gte("created_at", chartStartIso)
+      .limit(5000),
+    service
       .from("profiles")
       .select("created_at")
       .eq("role", "leader")
@@ -258,6 +274,7 @@ export default async function AdminDashboardPage() {
   if (
     publishedError ||
     privateError ||
+    businessChurchError ||
     leadersTotalError ||
     leadersActiveError ||
     leadersPendingError ||
@@ -271,6 +288,7 @@ export default async function AdminDashboardPage() {
     recentError ||
     publishedUpdatedError ||
     privateUpdatedError ||
+    businessChurchCreatedError ||
     leaderCreatedError ||
     preCreatedError
   ) {
@@ -298,6 +316,11 @@ export default async function AdminDashboardPage() {
 
   const publishedSeries = buildDailySeries((publishedUpdatedRows ?? []) as TimestampRow[], "updated_at", chartDays);
   const privateSeries = buildDailySeries((privateUpdatedRows ?? []) as TimestampRow[], "updated_at", chartDays);
+  const businessChurchSeries = buildDailySeries(
+    (businessChurchCreatedRows ?? []) as TimestampRow[],
+    "created_at",
+    chartDays,
+  );
   const leadersSeries = buildDailySeries((leaderCreatedRows ?? []) as TimestampRow[], "created_at", chartDays);
   const preSermonsSeries = buildDailySeries((preCreatedRows ?? []) as TimestampRow[], "created_at", chartDays);
 
@@ -323,6 +346,13 @@ export default async function AdminDashboardPage() {
       series: privateSeries,
       meta: `atualizações • ${chartDays} dias`,
       accent: "sky",
+    },
+    {
+      label: "Igrejas Business",
+      value: businessChurchCount ?? 0,
+      series: businessChurchSeries,
+      meta: "ativas • plano business",
+      accent: "emerald",
     },
     {
       label: "Visualizações",

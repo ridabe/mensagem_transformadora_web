@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentProfile } from "@/lib/auth/profiles";
+import { canAccessChurchAdminArea, getCurrentProfile } from "@/lib/auth/profiles";
 
 function getString(formData: FormData, key: string): string {
   const v = formData.get(key);
@@ -76,6 +76,15 @@ export async function login(formData: FormData) {
   }
 
   if (profile.role === "admin") redirect("/admin/dashboard");
+  if (profile.role === "church_admin") {
+    const ok = await canAccessChurchAdminArea(profile);
+    if (ok) redirect("/igreja/dashboard");
+    redirect(
+      `/lider/sermoes?error=${encodeURIComponent("church_admin_not_allowed")}&reason=${encodeURIComponent(
+        "Esta opção só está disponível para líderes associados a uma igreja com Plano Business ativo.",
+      )}`,
+    );
+  }
   redirect("/lider/sermoes");
 }
 

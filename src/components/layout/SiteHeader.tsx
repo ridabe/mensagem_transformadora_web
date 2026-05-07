@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/profiles";
 import { logout as leaderLogout } from "@/app/login/actions";
 import { logout as adminLogout } from "@/app/admin/login/actions";
+import { MobileMenu } from "./MobileMenu";
+import { AccessDropdown } from "./AccessDropdown";
 
 const PLAY_STORE_URL =
   "https://play.google.com/store/search?q=mensagem%20transformadora&c=apps";
@@ -11,6 +13,8 @@ export async function SiteHeader() {
   const profile = await getCurrentProfile().catch(() => null);
   const isLoggedIn = !!profile && profile.status !== "blocked";
   const isAdmin = isLoggedIn && profile.role === "admin";
+  const isChurchAdmin = isLoggedIn && profile.role === "church_admin";
+  const areaHref = isAdmin ? "/admin/dashboard" : isChurchAdmin ? "/igreja/dashboard" : "/lider/sermoes";
 
   return (
     <header className="sticky top-0 z-10 border-b border-[var(--mt-border)] bg-[var(--mt-surface)]/80 backdrop-blur">
@@ -195,7 +199,7 @@ export async function SiteHeader() {
           </Link>
           {isLoggedIn ? (
             <Link
-              href={isAdmin ? "/admin/dashboard" : "/lider/sermoes"}
+              href={areaHref}
               className="hover:text-[var(--mt-text)]"
             >
               Minha área
@@ -209,55 +213,31 @@ export async function SiteHeader() {
           {isLoggedIn ? (
             <>
               <Link
-                href={isAdmin ? "/admin/dashboard" : "/lider/sermoes"}
-                className="hidden h-10 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5 md:inline-flex"
+                href={areaHref}
+                className="btn btn-ghost btn-sm hidden md:inline-flex"
               >
                 Minha área
               </Link>
               {isAdmin ? (
                 <form action={adminLogout} className="hidden md:block">
-                  <button
-                    type="submit"
-                    className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
-                  >
+                  <button type="submit" className="btn btn-ghost btn-sm inline-flex">
                     Sair
                   </button>
                 </form>
               ) : (
                 <form action={leaderLogout} className="hidden md:block">
-                  <button
-                    type="submit"
-                    className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
-                  >
+                  <button type="submit" className="btn btn-ghost btn-sm inline-flex">
                     Sair
                   </button>
                 </form>
               )}
             </>
           ) : (
-            <details className="relative">
-              <summary className="list-none inline-flex h-10 cursor-pointer items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5">
-                Acessar
-              </summary>
-              <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] shadow-lg">
-                <Link
-                  href="/login"
-                  className="block px-4 py-3 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
-                >
-                  Entrar
-                </Link>
-                <Link
-                  href="/cadastro"
-                  className="block px-4 py-3 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
-                >
-                  Cadastro
-                </Link>
-              </div>
-            </details>
+            <AccessDropdown />
           )}
           <Link
             href="/sobre"
-            className="hidden h-10 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5 md:inline-flex"
+            className="btn btn-ghost btn-sm hidden md:inline-flex"
           >
             Sobre
           </Link>
@@ -265,10 +245,27 @@ export async function SiteHeader() {
             href={PLAY_STORE_URL}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-10 items-center justify-center rounded-full bg-[var(--mt-navy)] px-4 text-sm font-semibold text-white hover:opacity-95"
+            className="btn btn-primary btn-sm hidden md:inline-flex"
           >
             Baixar App
           </a>
+          <div className="md:hidden">
+            <MobileMenu
+              isLoggedIn={isLoggedIn}
+              areaHref={areaHref}
+              playStoreUrl={PLAY_STORE_URL}
+              logoutSlot={isLoggedIn ? (
+                <form action={isAdmin ? adminLogout : leaderLogout} className="w-full">
+                  <button
+                    type="submit"
+                    className="w-full rounded-xl px-4 py-3 text-left text-sm font-medium text-[var(--mt-error)] transition-colors hover:bg-white/5"
+                  >
+                    Sair
+                  </button>
+                </form>
+              ) : undefined}
+            />
+          </div>
         </div>
       </div>
     </header>

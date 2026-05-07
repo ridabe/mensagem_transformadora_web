@@ -221,6 +221,78 @@ export default async function LiderAssinaturaPage() {
 
   const profile = await requireLeader();
 
+  const service = createServiceRoleClient();
+  const { data: churchRow } = profile.churchId
+    ? await service
+        .from("churches")
+        .select("id,status,plan_type,plan_status,name")
+        .eq("id", profile.churchId)
+        .maybeSingle<{ id: string; status: string; plan_type: string | null; plan_status: string | null; name: string }>()
+    : { data: null };
+
+  const isBusinessChurchUnlimited =
+    Boolean(churchRow?.id) &&
+    String(churchRow?.status ?? "") === "active" &&
+    String(churchRow?.plan_type ?? "") === "business" &&
+    String(churchRow?.plan_status ?? "") === "active";
+
+  if (isBusinessChurchUnlimited) {
+    const usage = await getCurrentUsage(profile.authUserId);
+    const used = usage.used ?? 0;
+    const nextRenewal = getNextRenewalDate({ current_period_end: null, cycle_end: usage.cycle_end });
+    const nextRenewalLabel = nextRenewal ? formatPtBrDate(nextRenewal) : "—";
+
+    return (
+      <main className="flex flex-col gap-6">
+        <header className="flex flex-col gap-2">
+          <p className="text-sm text-[var(--mt-muted)]">Área do líder • Assinatura</p>
+          <h2 className="text-2xl font-semibold tracking-tight">Assinatura</h2>
+        </header>
+
+        <section className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-1">
+              <p className="text-sm text-[var(--mt-muted)]">Plano atual</p>
+              <p className="text-lg font-semibold tracking-tight">Business (Igreja)</p>
+              <p className="mt-1 text-xs text-[var(--mt-muted)]">
+                Seu acesso é gerenciado pela sua igreja{churchRow?.name ? ` (${churchRow.name})` : ""}.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1 sm:items-end">
+              <p className="text-sm text-[var(--mt-muted)]">Status</p>
+              <span className="inline-flex items-center rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-3 py-1 text-sm font-semibold">
+                Ativo
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4">
+              <p className="text-sm text-[var(--mt-muted)]">Renovação do ciclo</p>
+              <p className="mt-2 text-sm font-semibold">{nextRenewalLabel}</p>
+              <p className="mt-2 text-xs text-[var(--mt-muted)]">
+                O ciclo é usado apenas para contagem/relatórios. Seu limite é ilimitado.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4">
+              <p className="text-sm text-[var(--mt-muted)]">Ciclo atual</p>
+              <p className="mt-2 text-sm font-semibold">
+                {formatDbDate(usage.cycle_start)} → {formatDbDate(usage.cycle_end)}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
+          <h3 className="text-lg font-semibold tracking-tight">Seu consumo</h3>
+          <p className="mt-3 text-sm font-semibold">Pré-sermões ilimitados</p>
+          <p className="mt-2 text-xs text-[var(--mt-muted)]">Criados no ciclo atual: {used}</p>
+        </section>
+      </main>
+    );
+  }
+
   const [subscription, usage, plansResult, rawSubscriptionResult] = await Promise.all([
     getCurrentSubscription(profile.authUserId),
     getCurrentUsage(profile.authUserId),

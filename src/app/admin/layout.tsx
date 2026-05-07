@@ -22,6 +22,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               Dashboard
             </Link>
             <Link
+              href="/admin/global/igrejas"
+              className="font-semibold text-[var(--mt-text)] hover:underline"
+            >
+              Admin Global
+            </Link>
+            <Link
               href="/admin/mensagens"
               className="font-semibold text-[var(--mt-text)] hover:underline"
             >

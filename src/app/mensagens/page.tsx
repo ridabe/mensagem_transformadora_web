@@ -128,7 +128,7 @@ export default async function PublicSermonsPage({
                   <Link
                     key={s.id}
                     href={`/mensagens/${s.slug}`}
-                    className="group overflow-hidden rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                    className="group overflow-hidden rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface)] shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
                   >
                     <div className="aspect-[16/9] overflow-hidden rounded-t-[32px] bg-gradient-to-br from-[var(--mt-navy)] via-[var(--mt-blue-medium)] to-[var(--mt-gold)] p-6 text-white">
                       <div className="flex items-center justify-between text-xs uppercase tracking-[0.25em] text-white/80">

@@ -5,6 +5,7 @@ import { requireLeader } from "@/lib/auth/profiles";
 import { buildSlugCandidates } from "@/app/api/_shared/slug";
 import { formatLeaderDisplayName } from "@/lib/format";
 import { validatePreSermonContent } from "@/lib/moderation/badWords";
+import { resolvePublicationChurch } from "@/lib/church";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { CopyShareCodeButton } from "../../copy-share-code-button";
 
@@ -28,8 +29,6 @@ type PreSermonRow = {
   created_at: string;
   updated_at: string;
 };
-
-type ChurchNameRow = { name: string | null };
 
 function getFormString(formData: FormData, key: string): string {
   const v = formData.get(key);
@@ -209,13 +208,10 @@ export async function publishPreSermonAction(formData: FormData) {
   const fullSermon = getString(row.full_sermon);
   if (!fullSermon) redirect(`/lider/sermoes/${encodeURIComponent(id)}/editar?error=full_sermon`);
 
-  const service = createServiceRoleClient();
-  const churchId = typeof row.church_id === "string" ? row.church_id : null;
-  const { data: churchRow } = churchId
-    ? await service.from("churches").select("name").eq("id", churchId).maybeSingle<ChurchNameRow>()
-    : { data: null };
-
-  const churchName = getString(churchRow?.name) ?? "Igreja";
+  const rawChurchId = typeof row.church_id === "string" ? row.church_id : null;
+  const churchMeta = await resolvePublicationChurch(rawChurchId);
+  const churchId = churchMeta?.churchId ?? null;
+  const churchName = churchMeta?.churchName ?? "Igreja";
   const sermonDate = formatIsoDateOnly(new Date());
   const finalSummary = buildFinalSummary({ notes: row.notes, fullSermon });
   const leaderDisplayName = formatLeaderDisplayName(profile.ministryTitle, profile.name) || profile.name;
@@ -245,6 +241,7 @@ export async function publishPreSermonAction(formData: FormData) {
       local_sermon_id: null,
       user_name: leaderDisplayName,
       preacher_name: leaderDisplayName,
+      church_id: churchId,
       church_name: churchName,
       sermon_date: sermonDate,
       sermon_time: null,
