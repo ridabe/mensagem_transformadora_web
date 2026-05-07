@@ -212,25 +212,19 @@ export async function SiteHeader() {
             <>
               <Link
                 href={areaHref}
-                className="hidden h-10 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5 md:inline-flex"
+                className="btn btn-ghost btn-sm hidden md:inline-flex"
               >
                 Minha área
               </Link>
               {isAdmin ? (
                 <form action={adminLogout} className="hidden md:block">
-                  <button
-                    type="submit"
-                    className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
-                  >
+                  <button type="submit" className="btn btn-ghost btn-sm inline-flex">
                     Sair
                   </button>
                 </form>
               ) : (
                 <form action={leaderLogout} className="hidden md:block">
-                  <button
-                    type="submit"
-                    className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
-                  >
+                  <button type="submit" className="btn btn-ghost btn-sm inline-flex">
                     Sair
                   </button>
                 </form>
@@ -238,7 +232,7 @@ export async function SiteHeader() {
             </>
           ) : (
             <details className="relative">
-              <summary className="list-none inline-flex h-10 cursor-pointer items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5">
+              <summary className="btn btn-ghost btn-sm inline-flex list-none">
                 Acessar
               </summary>
               <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] shadow-lg">
@@ -259,7 +253,7 @@ export async function SiteHeader() {
           )}
           <Link
             href="/sobre"
-            className="hidden h-10 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5 md:inline-flex"
+            className="btn btn-ghost btn-sm hidden md:inline-flex"
           >
             Sobre
           </Link>
@@ -267,7 +261,7 @@ export async function SiteHeader() {
             href={PLAY_STORE_URL}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-10 items-center justify-center rounded-full bg-[var(--mt-navy)] px-4 text-sm font-semibold text-white hover:opacity-95"
+            className="btn btn-primary btn-sm inline-flex"
           >
             Baixar App
           </a>

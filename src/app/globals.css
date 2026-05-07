@@ -153,6 +153,51 @@ body {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
+/* ─── Button System ──────────────────────────────────── */
+.btn {
+  @apply items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap cursor-pointer select-none;
+  @apply transition-all duration-200;
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mt-gold)]/50 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--mt-night)];
+  @apply disabled:opacity-50 disabled:pointer-events-none;
+}
+
+.btn-primary {
+  background: var(--mt-gradient-gold);
+  color: var(--mt-night);
+  font-weight: 700;
+  box-shadow: var(--mt-shadow-md), var(--mt-shadow-glow);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  @apply bg-[var(--mt-blue-medium)] text-[var(--mt-white)];
+  box-shadow: var(--mt-shadow-sm);
+}
+
+.btn-secondary:hover {
+  filter: brightness(1.15);
+}
+
+.btn-ghost {
+  @apply border border-[var(--mt-border)] bg-white/5 text-[var(--mt-text)];
+}
+
+.btn-ghost:hover {
+  @apply bg-white/10;
+}
+
+.btn-sm { @apply h-10 px-4 text-sm; }
+.btn-md { @apply h-12 px-6 text-sm; }
+.btn-lg { @apply h-14 px-7 text-sm; }
+
 /* Animation utilities */
 @keyframes fadeInUp {
   from {

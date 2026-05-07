@@ -26,17 +26,14 @@ export default async function HomePage() {
                 Um fluxo moderno pensado para líderes que desejam controle, clareza e impacto.
               </p>
               <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-                <Link
-                  href="/mensagens"
-                  className="inline-flex h-14 items-center justify-center rounded-full bg-[var(--mt-gold)] px-7 text-sm font-semibold text-[var(--mt-navy)] transition hover:brightness-95"
-                >
+                <Link href="/mensagens" className="btn btn-primary btn-lg inline-flex">
                   Ver mensagens
                 </Link>
                 <a
                   href="https://play.google.com/store/search?q=mensagem%20transformadora&c=apps"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex h-14 items-center justify-center rounded-full border border-white/15 bg-white/5 px-7 text-sm font-semibold text-white transition hover:bg-white/10"
+                  className="btn btn-ghost btn-lg inline-flex"
                 >
                   Baixar App
                 </a>
@@ -177,10 +174,7 @@ export default async function HomePage() {
               Tenha previsibilidade e recursos alinhados ao ritmo da sua criação de conteúdo.
             </p>
           </div>
-          <Link
-            href="/cadastro"
-            className="inline-flex h-14 items-center justify-center rounded-full bg-[var(--mt-navy)] px-6 text-sm font-semibold text-white transition hover:brightness-110"
-          >
+          <Link href="/cadastro" className="btn btn-secondary btn-lg inline-flex">
             Criar conta
           </Link>
         </div>
