@@ -11,7 +11,11 @@
       "PowerShell(winget search supabase 2>&1)",
       "Bash(Get-ChildItem -Path \"c:\\\\Projetos\\\\mensagem_transformadora_web\" -Force)",
       "Bash(Select-Object Name, PSIsContainer)",
-      "Bash(Format-Table -AutoSize)"
+      "Bash(Format-Table -AutoSize)",
+      "mcp__claude_ai_monday_com__get_user_context",
+      "mcp__claude_ai_monday_com__list_workspaces",
+      "mcp__claude_ai_monday_com__workspace_info",
+      "mcp__claude_ai_monday_com__get_board_info"
     ]
   }
 }
