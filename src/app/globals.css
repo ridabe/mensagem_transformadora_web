@@ -47,6 +47,28 @@
   --mt-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --mt-transition-normal: 300ms cubic-bezier(0.4, 0, 0.2, 1);
   --mt-transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Semantic state tokens */
+  --mt-error: #e05568;
+  --mt-error-bg: rgba(224, 85, 104, 0.12);
+  --mt-error-border: rgba(224, 85, 104, 0.30);
+  --mt-success: #00c875;
+  --mt-success-bg: rgba(0, 200, 117, 0.12);
+  --mt-success-border: rgba(0, 200, 117, 0.30);
+  --mt-warning: #F5C842;
+  --mt-warning-bg: rgba(245, 200, 66, 0.12);
+  --mt-warning-border: rgba(245, 200, 66, 0.30);
+  --mt-info: #a1e3f6;
+  --mt-info-bg: rgba(161, 227, 246, 0.12);
+  --mt-info-border: rgba(161, 227, 246, 0.30);
+
+  /* Border radius scale */
+  --mt-radius-sm: 0.5rem;
+  --mt-radius-md: 0.75rem;
+  --mt-radius-lg: 1rem;
+  --mt-radius-xl: 1.5rem;
+  --mt-radius-2xl: 2rem;
+  --mt-radius-pill: 9999px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -155,11 +177,11 @@ body {
 }
 
 .animate-fade-in-up {
-  animation: fadeInUp 0.6s ease-out;
+  animation: fadeInUp 0.6s ease-out both;
 }
 
 .animate-slide-in-right {
-  animation: slideInRight 0.6s ease-out;
+  animation: slideInRight 0.6s ease-out both;
 }
 
 /* Staggered animations */

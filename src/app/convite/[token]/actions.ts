@@ -61,7 +61,7 @@ function isExpired(expiresAt: unknown): boolean {
   return d.getTime() <= Date.now();
 }
 
-function redirectError(token: string, code: string, reason?: string) {
+function redirectError(token: string, code: string, reason?: string): never {
   const safeToken = encodeURIComponent(token);
   const safeCode = encodeURIComponent(code);
   const safeReason = (reason || "").trim().slice(0, 200);
