@@ -3,8 +3,8 @@ import Link from 'next/link'
 export default function EmptyPreachersState(props: { churchName: string }) {
   const name = props.churchName?.trim() ? props.churchName.trim() : 'sua igreja'
   return (
-    <div className="text-center py-12">
-      <div className="mx-auto h-12 w-12 text-gray-400">
+    <div className="py-12 text-center">
+      <div className="mx-auto h-12 w-12 text-[var(--mt-text-secondary)]">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path
             strokeLinecap="round"
@@ -14,16 +14,16 @@ export default function EmptyPreachersState(props: { churchName: string }) {
           />
         </svg>
       </div>
-      <h3 className="mt-2 text-sm font-medium text-gray-900">
+      <h3 className="mt-2 text-sm font-medium text-[var(--mt-text)]">
         Nenhum preleitor cadastrado em {name}
       </h3>
-      <p className="mt-1 text-sm text-gray-500">
+      <p className="mt-1 text-sm text-[var(--mt-text-secondary)]">
         Comece adicionando o primeiro preleitor à igreja {name}.
       </p>
       <div className="mt-6">
         <Link
           href="/igreja/preleitores/novo"
-          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className="btn btn-primary btn-md inline-flex"
         >
           <svg className="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />

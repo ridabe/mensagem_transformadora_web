@@ -61,7 +61,7 @@ export default async function HomePage() {
             </div>
 
             <div className="space-y-6">
-              <div className="rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-[0_46px_80px_-64px_rgba(255,255,255,0.34)] backdrop-blur">
+              <div className="rounded-[var(--mt-radius-2xl)] border border-white/10 bg-white/5 p-8 shadow-[0_46px_80px_-64px_rgba(255,255,255,0.34)] backdrop-blur">
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-300/80">
                   Fluxo pensado para líderes
                 </p>
@@ -96,7 +96,7 @@ export default async function HomePage() {
                 ].map((item) => (
                   <div
                     key={item.label}
-                    className="rounded-3xl border border-white/10 bg-[#071028]/80 p-6"
+                    className="rounded-3xl border border-white/10 bg-[var(--mt-night)]/80 p-6"
                   >
                     <p className="text-xs uppercase tracking-[0.25em] text-slate-400/80">{item.label}</p>
                     <p className="mt-3 text-lg font-semibold text-white">{item.value}</p>
@@ -109,7 +109,7 @@ export default async function HomePage() {
       </section>
 
       <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="rounded-[40px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-8 shadow-[0_24px_60px_-50px_rgba(0,0,0,0.7)] sm:p-10">
+        <div className="rounded-[var(--mt-radius-3xl)] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-8 shadow-[0_24px_60px_-50px_rgba(0,0,0,0.7)] sm:p-10">
           <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-start">
             <div className="space-y-4">
               <p className="inline-flex max-w-fit rounded-full bg-[var(--mt-gold)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--mt-gold)]">
@@ -149,7 +149,7 @@ export default async function HomePage() {
               ].map((item) => (
                 <div
                   key={item.step}
-                  className="rounded-[28px] border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] p-6 shadow-sm"
+                  className="rounded-[var(--mt-radius-xl)] border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] p-6 shadow-sm"
                 >
                   <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--mt-gold)]/10 text-lg font-semibold text-[var(--mt-gold)]">
                     {item.step}
@@ -210,14 +210,15 @@ export default async function HomePage() {
             <Link
               key={plan.title}
               href="/cadastro"
-              className="group overflow-hidden rounded-[32px] border border-slate-200/90 bg-white p-6 shadow-lg transition hover:-translate-y-1 hover:shadow-2xl"
+              className="group overflow-hidden rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] p-6 transition hover:-translate-y-1"
+              style={{ boxShadow: 'var(--mt-shadow-lg)' }}
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.25em] text-slate-500">
+                  <p className="text-xs uppercase tracking-[0.25em] text-[var(--mt-text-secondary)]">
                     {plan.subtitle}
                   </p>
-                  <h3 className="mt-3 text-2xl font-semibold text-slate-900">{plan.title}</h3>
+                  <h3 className="mt-3 text-2xl font-semibold text-[var(--mt-text)]">{plan.title}</h3>
                 </div>
                 {plan.badge ? (
                   <span className="rounded-full bg-[var(--mt-gold)] px-3 py-1.5 text-xs font-semibold text-[var(--mt-navy)]">
@@ -225,15 +226,15 @@ export default async function HomePage() {
                   </span>
                 ) : null}
               </div>
-              <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200/70 bg-slate-100">
+              <div className="mt-6 overflow-hidden rounded-3xl border border-[var(--mt-border)] bg-[var(--mt-surface-muted)]">
                 <Image src={plan.image} alt={plan.title} className="h-auto w-full" sizes="100vw" />
               </div>
-              <p className="mt-6 text-sm leading-6 text-slate-600">{plan.description}</p>
+              <p className="mt-6 text-sm leading-6 text-[var(--mt-text-secondary)]">{plan.description}</p>
               <div className="mt-6 flex items-center justify-between gap-4">
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                <span className="rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface-muted)] px-3 py-1 text-xs font-semibold text-[var(--mt-text-secondary)]">
                   {plan.highlight}
                 </span>
-                <span className="text-sm font-semibold text-[var(--mt-navy)] transition group-hover:text-[var(--mt-gold)]">
+                <span className="text-sm font-semibold text-[var(--mt-text-secondary)] transition group-hover:text-[var(--mt-gold)]">
                   Escolher
                 </span>
               </div>
@@ -243,30 +244,30 @@ export default async function HomePage() {
       </section>
 
       <section className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
-        <div className="rounded-[32px] border border-slate-200/90 bg-white p-10 shadow-xl shadow-slate-900/5">
+        <div
+          className="rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] p-10"
+          style={{ boxShadow: 'var(--mt-shadow-xl)' }}
+        >
           <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--mt-gold)]">
                 NOVIDADE
               </p>
-              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-[var(--mt-text)]">
                 Acompanhe as mensagens compartilhadas pela nossa comunidade
               </h2>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
+              <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--mt-text-secondary)]">
                 Explore palavras e reflexões publicados por pessoas de todo o Brasil, organizados de forma clara para facilitar a leitura, o aprofundamento e o compartilhamento da Palavra.
               </p>
               <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                <Link
-                  href="/mensagens"
-                  className="inline-flex h-14 items-center justify-center rounded-full bg-[var(--mt-navy)] px-7 text-sm font-semibold text-white transition hover:brightness-110"
-                >
+                <Link href="/mensagens" className="btn btn-primary btn-lg inline-flex">
                   Ver publicações
                 </Link>
                 <a
                   href="https://play.google.com/store/search?q=mensagem%20transformadora&c=apps"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex h-14 items-center justify-center rounded-full border border-slate-300 bg-white px-7 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+                  className="btn btn-ghost btn-lg inline-flex"
                 >
                   Baixar App
                 </a>
@@ -288,9 +289,9 @@ export default async function HomePage() {
                   description: "Cartões elegantes e modernos que valorizam o conteúdo do líder.",
                 },
               ].map((item) => (
-                <div key={item.title} className="rounded-3xl border border-slate-200/90 bg-slate-50 p-6">
-                  <p className="text-xs uppercase tracking-[0.25em] text-slate-500">{item.title}</p>
-                  <p className="mt-4 text-sm leading-6 text-slate-600">{item.description}</p>
+                <div key={item.title} className="rounded-3xl border border-[var(--mt-border)] bg-[var(--mt-surface-muted)] p-6">
+                  <p className="text-xs uppercase tracking-[0.25em] text-[var(--mt-text-secondary)]">{item.title}</p>
+                  <p className="mt-4 text-sm leading-6 text-[var(--mt-text-secondary)]">{item.description}</p>
                 </div>
               ))}
             </div>

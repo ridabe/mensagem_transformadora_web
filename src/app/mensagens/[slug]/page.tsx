@@ -112,7 +112,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-10 lg:px-0">
-      <section className="rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6 shadow-sm sm:p-8">
+      <section className="rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="space-y-4">
             <p className="inline-flex max-w-fit rounded-full bg-[var(--mt-gold)]/10 px-3 py-1 text-xs uppercase tracking-[0.3em] text-[var(--mt-gold)]">
@@ -151,7 +151,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
       <div className="grid gap-8 lg:grid-cols-[1.35fr_0.65fr]">
         <article className="flex flex-col gap-6">
           {sermon.finalSummary ? (
-            <section className="rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6 shadow-sm">
+            <section className="rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6 shadow-sm">
               <p className="text-sm uppercase tracking-[0.3em] text-[var(--mt-gold)]">Resumo rápido</p>
               <p className="mt-4 whitespace-pre-wrap text-base leading-7 text-[var(--mt-text)]">
                 {sermon.finalSummary}
@@ -160,7 +160,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
           ) : null}
 
           {sermon.introduction ? (
-            <section className="rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
+            <section className="rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
               <h2 className="text-lg font-semibold">Introdução</h2>
               <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--mt-text)]">
                 {sermon.introduction}
@@ -169,7 +169,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
           ) : null}
 
           {sermon.keyPoints.length > 0 ? (
-            <section className="rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
+            <section className="rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
               <div className="flex items-center justify-between gap-4">
                 <h2 className="text-lg font-semibold">Pontos principais</h2>
                 <span className="rounded-full bg-[var(--mt-gold)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--mt-gold)]">
@@ -180,7 +180,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
                 {sermon.keyPoints.map((p) => (
                   <div
                     key={p.id}
-                    className="rounded-[28px] border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] p-5 shadow-sm"
+                    className="rounded-[var(--mt-radius-xl)] border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] p-5 shadow-sm"
                   >
                     <p className="text-sm font-semibold text-[var(--mt-text)]">{p.title}</p>
                     <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--mt-muted)]">
@@ -193,7 +193,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
           ) : null}
 
           {sermon.secondaryVerses.length > 0 ? (
-            <section className="rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
+            <section className="rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
               <h2 className="text-lg font-semibold">Versículos secundários</h2>
               <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-[var(--mt-muted)]">
                 {sermon.secondaryVerses.map((v) => (
@@ -204,13 +204,13 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
           ) : null}
 
           {sermon.highlightedPhrases.length > 0 ? (
-            <section className="rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
+            <section className="rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
               <h2 className="text-lg font-semibold">Frases marcantes</h2>
               <ul className="mt-4 space-y-3">
                 {sermon.highlightedPhrases.map((phrase) => (
                   <li
                     key={phrase}
-                    className="rounded-[28px] border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] p-4 text-sm text-[var(--mt-text)] shadow-sm"
+                    className="rounded-[var(--mt-radius-xl)] border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] p-4 text-sm text-[var(--mt-text)] shadow-sm"
                   >
                     “{phrase}”
                   </li>
@@ -220,7 +220,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
           ) : null}
 
           {sermon.personalObservations ? (
-            <section className="rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
+            <section className="rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
               <h2 className="text-lg font-semibold">Observações pessoais</h2>
               <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--mt-muted)]">
                 {sermon.personalObservations}
@@ -229,7 +229,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
           ) : null}
 
           {sermon.practicalApplications ? (
-            <section className="rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
+            <section className="rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
               <h2 className="text-lg font-semibold">Aplicações práticas</h2>
               <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--mt-muted)]">
                 {sermon.practicalApplications}
@@ -238,7 +238,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
           ) : null}
 
           {sermon.conclusion ? (
-            <section className="rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
+            <section className="rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
               <h2 className="text-lg font-semibold">Conclusão</h2>
               <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--mt-muted)]">
                 {sermon.conclusion}
@@ -248,7 +248,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
         </article>
 
         <aside className="space-y-5">
-          <div className="sticky top-24 space-y-4 rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6 shadow-sm">
+          <div className="sticky top-24 space-y-4 rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6 shadow-sm">
             <h2 className="text-base font-semibold">Compartilhar</h2>
             <p className="text-sm text-[var(--mt-muted)]">
               Copie o link e compartilhe esta mensagem com sua comunidade.
@@ -262,7 +262,7 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
             </Link>
           </div>
 
-          <div className="rounded-[32px] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6 shadow-sm">
+          <div className="rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6 shadow-sm">
             <p className="text-sm font-semibold text-[var(--mt-text)]">Gostou desta mensagem?</p>
             <p className="mt-3 text-sm leading-6 text-[var(--mt-muted)]">
               Baixe o app Mensagem Transformadora e registre suas próprias mensagens offline. Publique no site apenas quando quiser.

@@ -11,33 +11,30 @@ export default function ChurchDashboardCard({
   title,
   value,
   description,
-  href
+  href,
 }: ChurchDashboardCardProps) {
   return (
-    <div className="bg-white overflow-hidden shadow rounded-lg">
+    <div
+      className="overflow-hidden rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)]"
+      style={{ boxShadow: 'var(--mt-shadow-md)' }}
+    >
       <div className="p-5">
-        <div className="flex items-center">
-          <div className="flex-1">
-            <dl>
-              <dt className="text-sm font-medium text-gray-500 truncate">
-                {title}
-              </dt>
-              <dd className="text-lg font-medium text-gray-900">
-                {value}
-              </dd>
-            </dl>
-          </div>
-        </div>
+        <dl>
+          <dt className="truncate text-sm font-medium text-[var(--mt-text-secondary)]">
+            {title}
+          </dt>
+          <dd className="mt-1 text-2xl font-semibold text-[var(--mt-text)]">
+            {value}
+          </dd>
+        </dl>
       </div>
-      <div className="bg-gray-50 px-5 py-3">
-        <div className="text-sm">
-          <Link
-            href={href}
-            className="font-medium text-blue-600 hover:text-blue-500"
-          >
-            {description}
-          </Link>
-        </div>
+      <div className="border-t border-[var(--mt-border)] bg-[var(--mt-surface-muted)] px-5 py-3">
+        <Link
+          href={href}
+          className="text-sm font-medium text-[var(--mt-gold)] transition-colors duration-200 hover:text-[var(--mt-white)]"
+        >
+          {description}
+        </Link>
       </div>
     </div>
   )

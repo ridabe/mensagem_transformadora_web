@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/profiles";
 import { logout as leaderLogout } from "@/app/login/actions";
 import { logout as adminLogout } from "@/app/admin/login/actions";
+import { MobileMenu } from "./MobileMenu";
+import { AccessDropdown } from "./AccessDropdown";
 
 const PLAY_STORE_URL =
   "https://play.google.com/store/search?q=mensagem%20transformadora&c=apps";
@@ -231,25 +233,7 @@ export async function SiteHeader() {
               )}
             </>
           ) : (
-            <details className="relative">
-              <summary className="btn btn-ghost btn-sm inline-flex list-none">
-                Acessar
-              </summary>
-              <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] shadow-lg">
-                <Link
-                  href="/login"
-                  className="block px-4 py-3 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
-                >
-                  Entrar
-                </Link>
-                <Link
-                  href="/cadastro"
-                  className="block px-4 py-3 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
-                >
-                  Cadastro
-                </Link>
-              </div>
-            </details>
+            <AccessDropdown />
           )}
           <Link
             href="/sobre"
@@ -261,10 +245,27 @@ export async function SiteHeader() {
             href={PLAY_STORE_URL}
             target="_blank"
             rel="noreferrer"
-            className="btn btn-primary btn-sm inline-flex"
+            className="btn btn-primary btn-sm hidden md:inline-flex"
           >
             Baixar App
           </a>
+          <div className="md:hidden">
+            <MobileMenu
+              isLoggedIn={isLoggedIn}
+              areaHref={areaHref}
+              playStoreUrl={PLAY_STORE_URL}
+              logoutSlot={isLoggedIn ? (
+                <form action={isAdmin ? adminLogout : leaderLogout} className="w-full">
+                  <button
+                    type="submit"
+                    className="w-full rounded-xl px-4 py-3 text-left text-sm font-medium text-[var(--mt-error)] transition-colors hover:bg-white/5"
+                  >
+                    Sair
+                  </button>
+                </form>
+              ) : undefined}
+            />
+          </div>
         </div>
       </div>
     </header>
