@@ -11,6 +11,8 @@ export async function SiteHeader() {
   const profile = await getCurrentProfile().catch(() => null);
   const isLoggedIn = !!profile && profile.status !== "blocked";
   const isAdmin = isLoggedIn && profile.role === "admin";
+  const isChurchAdmin = isLoggedIn && profile.role === "church_admin";
+  const areaHref = isAdmin ? "/admin/dashboard" : isChurchAdmin ? "/igreja/dashboard" : "/lider/sermoes";
 
   return (
     <header className="sticky top-0 z-10 border-b border-[var(--mt-border)] bg-[var(--mt-surface)]/80 backdrop-blur">
@@ -195,7 +197,7 @@ export async function SiteHeader() {
           </Link>
           {isLoggedIn ? (
             <Link
-              href={isAdmin ? "/admin/dashboard" : "/lider/sermoes"}
+              href={areaHref}
               className="hover:text-[var(--mt-text)]"
             >
               Minha área
@@ -209,7 +211,7 @@ export async function SiteHeader() {
           {isLoggedIn ? (
             <>
               <Link
-                href={isAdmin ? "/admin/dashboard" : "/lider/sermoes"}
+                href={areaHref}
                 className="hidden h-10 items-center justify-center rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm font-medium text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5 md:inline-flex"
               >
                 Minha área

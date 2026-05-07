@@ -17,6 +17,30 @@ export type CurrentProfile = {
   ministryTitle: string | null;
 };
 
+export async function canAccessChurchAdminArea(profile: Pick<CurrentProfile, "role" | "churchId">): Promise<boolean> {
+  if (profile.role !== "church_admin") return false;
+  if (!profile.churchId) return false;
+
+  const service = createServiceRoleClient();
+  const { data: churchRow, error } = await service
+    .from("churches")
+    .select("id,status,plan_type,plan_status")
+    .eq("id", profile.churchId)
+    .maybeSingle<{ id: string; status: string; plan_type: string | null; plan_status: string | null }>();
+
+  if (error || !churchRow?.id) return false;
+
+  const status = String(churchRow.status ?? "").trim().toLowerCase();
+  const planType = String(churchRow.plan_type ?? "").trim().toLowerCase();
+  const planStatus = String(churchRow.plan_status ?? "").trim().toLowerCase();
+
+  return (
+    status === "active" &&
+    planType === "business" &&
+    planStatus === "active"
+  );
+}
+
 function normalizeRole(value: unknown): ProfileRole | null {
   return value === "admin" || value === "leader" || value === "church_admin" ? value : null;
 }
@@ -51,6 +75,22 @@ function isMissingColumnError(err: unknown, column: string): boolean {
     return text.includes(c) && (text.includes("does not exist") || text.includes("not exist") || text.includes("unknown"));
   }
   return text.includes(c) && (text.includes("does not exist") || text.includes("not exist"));
+}
+
+async function selectProfileWithServiceRole(userId: string) {
+  try {
+    const service = createServiceRoleClient();
+    const { data, error } = await service
+      .from("profiles")
+      .select("id,auth_user_id,name,display_name,email,role,status,church_id,ministry_title")
+      .eq("auth_user_id", userId)
+      .maybeSingle();
+
+    if (error) return null;
+    return data;
+  } catch {
+    return null;
+  }
 }
 
 function normalizeMinistryTitleValue(value: unknown): string | null {
@@ -99,7 +139,13 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
       .maybeSingle();
   }
 
-  const row = byAuthUserId.data;
+  let row = byAuthUserId.data;
+  if (!row?.id) {
+    const fallback = await selectProfileWithServiceRole(user.id);
+    if (fallback?.id) {
+      row = fallback;
+    }
+  }
 
   if (!row?.id) {
     if (!user.email) return null;
@@ -127,11 +173,17 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
       .select("id,auth_user_id,name,display_name,email,role,status,church_id,ministry_title")
       .single();
 
-    const createdRow = created.data;
-    if (!createdRow?.id) return null;
+    let createdRow = created.data;
+    if (!createdRow?.id) {
+      const duplicateRow = await selectProfileWithServiceRole(user.id);
+      if (!duplicateRow?.id) return null;
+      createdRow = duplicateRow;
+    }
 
     await supabase.from("subscriptions").insert({
       leader_id: user.id,
+      owner_type: "leader",
+      owner_id: user.id,
       plan: "free",
       status: "free",
     });
@@ -223,6 +275,8 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
   if (!existingSubscription?.id) {
     await supabase.from("subscriptions").insert({
       leader_id: user.id,
+      owner_type: "leader",
+      owner_id: user.id,
       plan: "free",
       status: "free",
     });

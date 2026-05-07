@@ -62,21 +62,26 @@ export class ChurchService {
     return createServiceRoleClient()
   }
 
+  private normalizeChurchFlag(value: unknown): string {
+    return String(value ?? '').trim().toLowerCase()
+  }
+
   /**
    * Verifica se o usuário logado é church_admin da igreja ativa com plano business
    */
   async assertChurchAdmin(): Promise<{ profile: Profile; church: Church }> {
     const supabase = await this.getSupabase()
+    const adminSupabase = await this.getAdminSupabase()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
       throw new Error('Usuário não autenticado')
     }
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await adminSupabase
       .from('profiles')
       .select('*')
       .eq('auth_user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (profileError || !profile) {
       throw new Error('Perfil não encontrado')
@@ -90,17 +95,20 @@ export class ChurchService {
       throw new Error('Acesso negado: usuário não está associado a uma igreja')
     }
 
-    const { data: church, error: churchError } = await supabase
+    const { data: church, error: churchError } = await adminSupabase
       .from('churches')
       .select('*')
       .eq('id', profile.church_id)
-      .single()
+      .maybeSingle()
 
     if (churchError || !church) {
       throw new Error('Igreja não encontrada')
     }
 
-    if (church.status !== 'active' || church.plan_type !== 'business' || church.plan_status !== 'active') {
+    const status = this.normalizeChurchFlag(church.status)
+    const planType = this.normalizeChurchFlag(church.plan_type)
+    const planStatus = this.normalizeChurchFlag(church.plan_status)
+    if (status !== 'active' || planType !== 'business' || planStatus !== 'active') {
       throw new Error(this.businessOnlyActionMessage)
     }
 
@@ -111,22 +119,26 @@ export class ChurchService {
    * Verifica se a igreja tem plano Business ativo
    */
   async assertBusinessChurchActive(churchId: string): Promise<Church> {
-    const supabase = await this.getSupabase()
-    const { data: church, error } = await supabase
+    const adminSupabase = await this.getAdminSupabase()
+    const { data: church, error } = await adminSupabase
       .from('churches')
       .select('*')
       .eq('id', churchId)
-      .single()
+      .maybeSingle()
 
     if (error || !church) {
       throw new Error('Igreja não encontrada')
     }
 
-    if (church.status !== 'active') {
+    const status = this.normalizeChurchFlag(church.status)
+    const planType = this.normalizeChurchFlag(church.plan_type)
+    const planStatus = this.normalizeChurchFlag(church.plan_status)
+
+    if (status !== 'active') {
       throw new Error('Igreja não está ativa')
     }
 
-    if (church.plan_type !== 'business' || church.plan_status !== 'active') {
+    if (planType !== 'business' || planStatus !== 'active') {
       throw new Error('Igreja não possui plano Business ativo')
     }
 
@@ -336,26 +348,27 @@ export class ChurchService {
    */
   async getCurrentUserChurch(): Promise<{ profile: Profile; church: Church }> {
     const supabase = await this.getSupabase()
+    const adminSupabase = await this.getAdminSupabase()
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
       throw new Error('Usuário não autenticado')
     }
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await adminSupabase
       .from('profiles')
       .select('*')
       .eq('auth_user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (profileError || !profile || !profile.church_id) {
       throw new Error('Usuário não está associado a uma igreja')
     }
 
-    const { data: church, error: churchError } = await supabase
+    const { data: church, error: churchError } = await adminSupabase
       .from('churches')
       .select('*')
       .eq('id', profile.church_id)
-      .single()
+      .maybeSingle()
 
     if (churchError || !church) {
       throw new Error('Igreja não encontrada')

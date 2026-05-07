@@ -74,6 +74,7 @@ export async function archivePreSermonAction(formData: FormData) {
 export default async function LiderSermoesPage({ searchParams }: LiderSermoesPageProps) {
   const sp = searchParams ? await searchParams : undefined;
   const error = getString(sp, "error");
+  const reason = getString(sp, "reason");
   const saved = getString(sp, "saved");
   const archived = getString(sp, "archived");
   const code = getString(sp, "code");
@@ -101,6 +102,8 @@ export default async function LiderSermoesPage({ searchParams }: LiderSermoesPag
       ? "ID inválido."
       : error === "archive"
         ? "Não foi possível arquivar a mensagem."
+        : error === "church_admin_not_allowed"
+          ? reason?.trim() || "Esta opção só está disponível para líderes associados a uma igreja com Plano Business ativo."
         : null;
 
   const infoMessage =

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { login } from "./actions";
 
 import { SubmitButton } from "@/app/admin/login/submit-button";
-import { getCurrentProfile } from "@/lib/auth/profiles";
+import { canAccessChurchAdminArea, getCurrentProfile } from "@/lib/auth/profiles";
 
 type LoginPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -24,7 +24,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const current = await getCurrentProfile().catch(() => null);
   if (current && current.status !== "blocked") {
     if (current.role === "admin") redirect("/admin/dashboard");
-    if (current.role === "church_admin") redirect("/igreja/dashboard");
+    if (current.role === "church_admin") {
+      const ok = await canAccessChurchAdminArea(current);
+      if (ok) redirect("/igreja/dashboard");
+      redirect(
+        `/lider/sermoes?error=${encodeURIComponent("church_admin_not_allowed")}&reason=${encodeURIComponent(
+          "Esta opção só está disponível para líderes associados a uma igreja com Plano Business ativo.",
+        )}`,
+      );
+    }
     redirect("/lider/sermoes");
   }
 

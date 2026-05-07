@@ -14,7 +14,7 @@ export default async function ChurchAreaLayout({ children }: ChurchAreaLayoutPro
     const { church } = await churchService.assertChurchAdmin()
     churchName = church?.name?.trim() ? church.name.trim() : 'Igreja'
   } catch {
-    redirect('/lider') // Redirecionar para área do líder se não for church_admin
+    redirect('/lider/sermoes')
   }
 
   return (
