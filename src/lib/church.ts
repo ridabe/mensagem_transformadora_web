@@ -48,6 +48,40 @@ type ChurchInvitation = {
   updated_at: string
 }
 
+export type PublicationChurchMeta = {
+  churchId: string
+  churchName: string
+}
+
+/**
+ * Resolve a identidade institucional para uma publicação.
+ * Retorna os dados da igreja somente se ela estiver ativa com plano Business ativo.
+ * Fallback: retorna null (publicação segue comportamento padrão sem vínculo institucional).
+ */
+export async function resolvePublicationChurch(churchId: string | null): Promise<PublicationChurchMeta | null> {
+  if (!churchId) return null
+
+  const service = createServiceRoleClient()
+  const { data: church, error } = await service
+    .from('churches')
+    .select('id,name,status,plan_type,plan_status')
+    .eq('id', churchId)
+    .maybeSingle<{ id: string; name: string; status: string; plan_type: string | null; plan_status: string | null }>()
+
+  if (error || !church?.id) return null
+
+  const status = String(church.status ?? '').trim().toLowerCase()
+  const planType = String(church.plan_type ?? '').trim().toLowerCase()
+  const planStatus = String(church.plan_status ?? '').trim().toLowerCase()
+
+  if (status !== 'active' || planType !== 'business' || planStatus !== 'active') return null
+
+  const name = typeof church.name === 'string' && church.name.trim() ? church.name.trim() : null
+  if (!name) return null
+
+  return { churchId: church.id, churchName: name }
+}
+
 export class ChurchService {
   private readonly churchAdminOptionMessage =
     'Esta opção só está disponível para líderes associados a uma igreja com Plano Business ativo.'
@@ -282,7 +316,7 @@ export class ChurchService {
 
       if (!error && data) return this.mapInvitationRow(data as Record<string, unknown>)
 
-      const err = error && typeof error === 'object' ? (error as Record<string, unknown>) : null
+      const err = error && typeof error === 'object' ? (error as unknown as Record<string, unknown>) : null
       const code = err && typeof err['code'] === 'string' ? err['code'] : ''
       const msg = err && typeof err['message'] === 'string' ? err['message'] : ''
       const isTokenCollision = code === '23505' && msg.toLowerCase().includes('token')

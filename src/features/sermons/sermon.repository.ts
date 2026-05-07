@@ -16,6 +16,7 @@ type DbPublicSermonRow = {
   local_sermon_id: string | null;
   user_name: string;
   preacher_name: string;
+  church_id: string | null;
   church_name: string;
   sermon_date: Date | string;
   sermon_time: string | null;
@@ -77,6 +78,7 @@ function mapRowToPublishedSermon(row: DbPublicSermonRow): PublishedSermon {
     localSermonId: row.local_sermon_id,
     userName: row.user_name,
     preacherName: row.preacher_name,
+    churchId: row.church_id ?? null,
     churchName: row.church_name,
     sermonDate: toYyyyMmDd(row.sermon_date),
     sermonTime: row.sermon_time,
@@ -128,6 +130,7 @@ export async function getPublicSermons(
         local_sermon_id,
         user_name,
         preacher_name,
+        church_id,
         church_name,
         sermon_date,
         sermon_time,
@@ -201,6 +204,7 @@ export async function getPublicSermonBySlug(
         local_sermon_id,
         user_name,
         preacher_name,
+        church_id,
         church_name,
         sermon_date,
         sermon_time,

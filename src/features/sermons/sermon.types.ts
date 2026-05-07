@@ -11,6 +11,7 @@ export type PublishedSermon = {
   localSermonId: string | null;
   userName: string;
   preacherName: string;
+  churchId: string | null;
   churchName: string;
   sermonDate: string;
   sermonTime: string | null;

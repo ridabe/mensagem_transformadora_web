@@ -125,6 +125,11 @@ export default async function PublicSermonPage({ params }: SermonPageProps) {
               <h1 className="text-3xl font-semibold tracking-tight text-[var(--mt-text)] sm:text-4xl">
                 {sermon.sermonTitle}
               </h1>
+              {sermon.churchId ? (
+                <p className="inline-flex max-w-fit rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] px-3 py-1 text-xs text-[var(--mt-muted)]">
+                  Publicado pela Igreja {sermon.churchName}
+                </p>
+              ) : null}
               <p className="max-w-2xl text-sm leading-7 text-[var(--mt-muted)]">
                 Versículo base: <span className="font-medium text-[var(--mt-text)]">{sermon.mainVerse}</span>
               </p>
