@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth/profiles";
+import { VerseFieldMain } from "@/components/bible";
 
 type AdminSermonEditPageProps = {
   params: Promise<{ id: string }>;
@@ -171,15 +172,11 @@ export default async function AdminSermonEditPage({ params }: AdminSermonEditPag
           />
         </label>
 
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">Versículo base</span>
-          <input
-            type="text"
-            name="main_verse"
-            defaultValue={mainVerse}
-            className="h-11 w-full rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm outline-none focus:ring-2 focus:ring-[var(--mt-amber)]"
-          />
-        </label>
+        <VerseFieldMain
+          name="main_verse"
+          label="Versículo base"
+          defaultValue={mainVerse}
+        />
 
         <label className="flex flex-col gap-2 text-sm">
           <span className="font-semibold">Resumo final</span>

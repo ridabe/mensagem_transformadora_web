@@ -119,6 +119,10 @@ export default async function LiderSermoesPage({ searchParams }: LiderSermoesPag
     .eq("leader_id", profile.authUserId)
     .order("updated_at", { ascending: false });
 
+  if (rowsError) {
+    console.error("[pre_sermons SELECT error]", rowsError.message, rowsError.code, rowsError.details, rowsError.hint, "leader:", profile.authUserId);
+  }
+
   const rows: PreSermonRow[] = ((rowsData ?? []) as PreSermonRow[]).filter((r) => r?.id);
 
   return (
@@ -167,6 +171,11 @@ export default async function LiderSermoesPage({ searchParams }: LiderSermoesPag
           <p className="mt-2 text-sm text-[var(--mt-muted)]">
             Não foi possível carregar sua lista de mensagens.
           </p>
+          {process.env.NODE_ENV === "development" && (
+            <pre className="mt-3 rounded-lg bg-black/30 p-3 text-xs text-red-300 whitespace-pre-wrap break-all">
+              {String(rowsError.message ?? rowsError ?? "unknown")} | code={String(rowsError.code ?? "?")}
+            </pre>
+          )}
         </div>
       ) : rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-[var(--mt-border)] bg-[var(--mt-surface)] p-8 text-center">

@@ -8,6 +8,7 @@ import { validatePreSermonContent } from "@/lib/moderation/badWords";
 import { resolvePublicationChurch } from "@/lib/church";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { CopyShareCodeButton } from "../../copy-share-code-button";
+import { VerseFieldMain, VerseFieldSecondary } from "@/components/bible";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -131,7 +132,7 @@ export async function updatePreSermonAction(formData: FormData) {
   const notes = normalizeOptionalText(getFormString(formData, "notes"));
   const fullSermon = normalizeOptionalText(getFormString(formData, "full_sermon"));
   const status = parseStatus(getFormString(formData, "status"));
-  const secondaryVerses = parseSecondaryVerses(getFormString(formData, "secondary_verses"));
+  const secondaryVerses = formData.getAll("secondary_verses").map(String).filter(Boolean) || null;
 
   if (!title) redirect(`/lider/sermoes/${encodeURIComponent(id)}/editar?error=title`);
   if (!mainVerse) redirect(`/lider/sermoes/${encodeURIComponent(id)}/editar?error=main_verse`);
@@ -440,7 +441,9 @@ export default async function LiderEditarSermoesPage({ params, searchParams }: E
         ? "Alterações salvas."
         : null;
 
-  const secondaryVersesText = stringifySecondaryVerses(row.secondary_verses);
+  const secondaryVersesArray = Array.isArray(row.secondary_verses)
+    ? (row.secondary_verses as unknown[]).filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+    : [];
   const publishedSlug = getString(row.published_slug);
   const fieldClass = (isBlocked: boolean, base: string) =>
     isBlocked ? `${base} border-red-500 ring-red-500 focus:ring-2` : base;
@@ -521,33 +524,16 @@ export default async function LiderEditarSermoesPage({ params, searchParams }: E
           />
         </label>
 
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">Versículo principal</span>
-          <input
-            name="main_verse"
-            required
-            defaultValue={row.main_verse}
-            disabled={isArchived}
-            className={fieldClass(
-              blockedFields.has("main_verse"),
-              "h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2 disabled:opacity-60",
-            )}
-          />
-        </label>
+        <VerseFieldMain
+          name="main_verse"
+          required
+          defaultValue={row.main_verse}
+        />
 
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">Versículos secundários (opcional)</span>
-          <textarea
-            name="secondary_verses"
-            rows={4}
-            defaultValue={secondaryVersesText}
-            disabled={isArchived}
-            className={fieldClass(
-              blockedFields.has("secondary_verses"),
-              "rounded-xl border border-[var(--mt-border)] bg-transparent px-4 py-3 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2 disabled:opacity-60",
-            )}
-          />
-        </label>
+        <VerseFieldSecondary
+          name="secondary_verses"
+          defaultValue={secondaryVersesArray}
+        />
 
         <label className="flex flex-col gap-2 text-sm">
           <span className="font-semibold">Notas (opcional)</span>
