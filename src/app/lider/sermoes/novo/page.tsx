@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { canCreatePreSermon, requireLeader } from "@/lib/auth/profiles";
 import { createClient } from "@/lib/supabase/server";
+import { VerseFieldMain, VerseFieldSecondary } from "@/components/bible";
 
 type PreSermonStatus = "draft" | "active";
 
@@ -96,7 +97,7 @@ export async function createPreSermonAction(formData: FormData) {
   const notes = normalizeOptionalText(getFormString(formData, "notes"));
   const fullSermon = normalizeOptionalText(getFormString(formData, "full_sermon"));
   const status = parseStatus(getFormString(formData, "status"));
-  const secondaryVerses = parseSecondaryVerses(getFormString(formData, "secondary_verses"));
+  const secondaryVerses = formData.getAll("secondary_verses").map(String).filter(Boolean) || null;
 
   if (!title) redirect("/lider/sermoes/novo?error=title");
   if (!mainVerse) redirect("/lider/sermoes/novo?error=main_verse");
@@ -129,6 +130,14 @@ export async function createPreSermonAction(formData: FormData) {
   }
 
   if (insert.error || !insert.data?.id) {
+    console.error("[pre_sermons INSERT error]", {
+      code: insert.error?.code,
+      message: insert.error?.message,
+      details: insert.error?.details,
+      hint: insert.error?.hint,
+      leader_id: profile.authUserId,
+      payload_keys: Object.keys(payload),
+    });
     const details = getErrorText(insert.error) ?? "Não foi possível criar a mensagem.";
     redirect(`/lider/sermoes/novo?error=create&reason=${encodeURIComponent(details)}`);
   }
@@ -222,25 +231,9 @@ export default async function LiderNovoSermoesPage({ searchParams }: LiderNovoSe
           />
         </label>
 
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">Versículo principal</span>
-          <input
-            name="main_verse"
-            required
-            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2"
-            placeholder="Ex: João 3:16"
-          />
-        </label>
+        <VerseFieldMain name="main_verse" required />
 
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">Versículos secundários (opcional)</span>
-          <textarea
-            name="secondary_verses"
-            rows={4}
-            className="rounded-xl border border-[var(--mt-border)] bg-transparent px-4 py-3 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2"
-            placeholder={"Um por linha\nEx: Romanos 8:28\nEx: Salmos 23:1"}
-          />
-        </label>
+        <VerseFieldSecondary name="secondary_verses" />
 
         <label className="flex flex-col gap-2 text-sm">
           <span className="font-semibold">Notas (opcional)</span>
