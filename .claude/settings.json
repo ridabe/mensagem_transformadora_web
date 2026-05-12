@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Start-Process powershell *)",
+      "PowerShell(Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"c:\\\\Projetos\\\\mensagem_transformadora_web\"; npm run dev')",
+      "Bash(npx tsc *)"
+    ]
+  }
+}

@@ -197,6 +197,9 @@ export async function SiteHeader() {
           <Link href="/mensagens" className="hover:text-[var(--mt-text)]">
             Mensagens
           </Link>
+          <Link href="/contato" className="hover:text-[var(--mt-text)]">
+            Contato
+          </Link>
           {isLoggedIn ? (
             <Link
               href={areaHref}

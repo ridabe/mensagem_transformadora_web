@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -5,48 +6,62 @@ import planoFreeImage from "../../img/plano_free.png";
 import planoBasicoImage from "../../img/plano_basico.png";
 import planoProImage from "../../img/plano_pro.png";
 
-export default async function HomePage() {
+export const metadata: Metadata = {
+  title: "Organize sua Pregação — Mensagem Transformadora para Pastores e Líderes",
+  description:
+    "A plataforma que pastores e líderes usam para organizar anotações de pregação, versículos e mensagens da Palavra. Escreva, revise e publique sua mensagem com total controle.",
+};
 
+export default async function HomePage() {
   return (
     <main className="flex flex-1 flex-col">
+
+      {/* ── HERO — âncora Z: topo-esquerdo H1 → topo-direito card ── */}
       <section className="relative overflow-hidden bg-[var(--mt-navy)] text-white">
         <div className="absolute inset-x-0 top-0 h-96 bg-[radial-gradient(circle_at_top_right,rgba(245,200,66,0.18),transparent_30%),radial-gradient(circle_at_30%_20%,rgba(36,54,96,0.12),transparent_30%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(26,39,68,0.92)_20%,rgba(26,39,68,0.82)_100%)]" />
         <div className="relative mx-auto w-full max-w-7xl px-4 py-20 sm:py-24 lg:px-8">
           <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+
+            {/* Coluna esquerda — âncora topo-esquerdo do Z */}
             <div className="max-w-2xl">
               <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-slate-200/80">
-                100% offline no app • publicação opcional
+                Plataforma web para pregadores • App para a congregação
               </p>
-              <h1 className="mt-6 text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
-                Transforme suas anotações de pregação em mensagens organizadas e compartilháveis
+              <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
+                Organize sua pregação na web e deixe a congregação anotar no app
               </h1>
               <p className="mt-6 max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
-                Crie suas mensagens no app offline, gerencie pré-sermões com segurança e publique na web apenas quando quiser.
-                Um fluxo moderno pensado para líderes que desejam controle, clareza e impacto.
+                Registre versículos e pontos da mensagem na plataforma, gere um ID e compartilhe com a congregação.
+                No app, os dados são preenchidos automaticamente — cada ouvinte anota livremente durante a pregação.
               </p>
+              {/* CTAs em 1ª pessoa — âncora diagonal do Z */}
               <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-                <Link href="/mensagens" className="btn btn-primary btn-lg inline-flex">
-                  Ver mensagens
+                <Link
+                  href="/mensagens"
+                  className="btn btn-primary btn-lg inline-flex cursor-pointer"
+                >
+                  Quero explorar mensagens
                 </Link>
                 <a
                   href="https://play.google.com/store/search?q=mensagem%20transformadora&c=apps"
                   target="_blank"
                   rel="noreferrer"
-                  className="btn btn-ghost btn-lg inline-flex"
+                  className="btn btn-ghost btn-lg inline-flex cursor-pointer"
                 >
-                  Baixar App
+                  Baixar meu app
                 </a>
               </div>
-              <div className="mt-10 grid gap-4 sm:grid-cols-2">
+              {/* Cartões de confiança — Gestalt: agrupados próximos às CTAs */}
+              <div className="mt-8 grid gap-3 sm:grid-cols-2">
                 {[
                   {
                     label: "Controle total",
                     detail: "Publicação feita por você, quando estiver pronto.",
                   },
                   {
-                    label: "Foco no conteúdo",
-                    detail: "Estruture verso, pontos e aplicações com clareza.",
+                    label: "Foco na mensagem",
+                    detail: "Estruture versículo, pontos e aplicações com clareza.",
                   },
                 ].map((item) => (
                   <div
@@ -60,28 +75,35 @@ export default async function HomePage() {
               </div>
             </div>
 
+            {/* Coluna direita — âncora topo-direito do Z */}
             <div className="space-y-6">
               <div className="rounded-[var(--mt-radius-2xl)] border border-white/10 bg-white/5 p-8 shadow-[0_46px_80px_-64px_rgba(255,255,255,0.34)] backdrop-blur">
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-300/80">
-                  Fluxo pensado para líderes
+                  Uma experiência para pregadores e ouvintes
                 </p>
-                <h2 className="mt-4 text-3xl font-semibold text-white">Organize, publique e compartilhe</h2>
-                <div className="mt-8 space-y-6">
+                <h2 className="mt-4 text-3xl font-semibold text-white">Web para criar. App para anotar.</h2>
+                <div className="mt-8 space-y-4">
                   {[
                     {
-                      title: "Offline-first",
-                      description: "Crie e edite sem conexão e sincronize quando estiver pronto.",
+                      tag: "Na web",
+                      title: "Crie e publique a mensagem",
+                      description: "Cadastre versículo-chave, versículos adicionais e pontos da pregação. A plataforma gera um ID exclusivo para cada mensagem.",
                     },
                     {
-                      title: "Publicação opcional",
-                      description: "Escolha o que vai ao site e mantenha privacidade para o restante.",
+                      tag: "No app",
+                      title: "Congregação anota com o ID",
+                      description: "Ao informar o ID no app, os versículos são preenchidos automaticamente. O ouvinte anota livremente durante a pregação.",
                     },
                     {
-                      title: "Link exclusivo",
-                      description: "Cada mensagem ganha URL própria, pronta para compartilhar.",
+                      tag: "No app",
+                      title: "Salva no celular ou exporta PDF",
+                      description: "As anotações ficam guardadas no dispositivo ou podem ser exportadas em PDF para compartilhar com outras pessoas.",
                     },
                   ].map((item) => (
-                    <div key={item.title} className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                    <div key={item.title} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <span className="inline-block rounded-full bg-white/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-slate-300/80 mb-2">
+                        {item.tag}
+                      </span>
                       <p className="text-sm font-semibold text-white">{item.title}</p>
                       <p className="mt-2 text-sm leading-6 text-slate-300">{item.description}</p>
                     </div>
@@ -89,10 +111,10 @@ export default async function HomePage() {
                 </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 {[
-                  { label: "Planos pensados para líderes", value: "Free, Básico e Pro" },
-                  { label: "Acesso rápido", value: "Cadastro e uso imediato" },
+                  { label: "Planos para líderes", value: "Free, Básico e Pro" },
+                  { label: "Acesso imediato", value: "Cadastro e uso imediato" },
                 ].map((item) => (
                   <div
                     key={item.label}
@@ -108,43 +130,33 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── COMO FUNCIONA — Z stroke 2: passos à ESQUERDA, descrição à DIREITA ── */}
       <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="rounded-[var(--mt-radius-3xl)] border border-[var(--mt-border)] bg-[var(--mt-surface)] p-8 shadow-[0_24px_60px_-50px_rgba(0,0,0,0.7)] sm:p-10">
           <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-start">
-            <div className="space-y-4">
-              <p className="inline-flex max-w-fit rounded-full bg-[var(--mt-gold)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--mt-gold)]">
-                Como funciona
-              </p>
-              <h2 className="text-3xl font-semibold tracking-tight text-[var(--mt-text)] sm:text-4xl">
-                Um fluxo organizado em quatro passos
-              </h2>
-              <p className="max-w-xl text-sm leading-7 text-[var(--mt-muted)] sm:text-base">
-                Crie no app offline, revise na área de líder e publique apenas quando desejar.
-                Cada etapa foi pensada para reduzir atrito e manter o foco no conteúdo.
-              </p>
-            </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            {/* Passos — esquerda no desktop, abaixo no mobile (order) */}
+            <div className="grid gap-4 sm:grid-cols-2 order-2 lg:order-1">
               {[
                 {
                   step: "1",
-                  title: "Crie no app",
-                  description: "Anote versículo, pontos e conclusão mesmo sem internet.",
+                  title: "Crie a mensagem na web",
+                  description: "Cadastre o versículo-chave e versículos adicionais na plataforma. O sistema gera um ID exclusivo para a pregação.",
                 },
                 {
                   step: "2",
-                  title: "Revise no líder",
-                  description: "Administre pré-sermões e acompanhe o progresso.",
+                  title: "Compartilhe o ID",
+                  description: "Informe o ID para a congregação antes da pregação. No app, os dados da mensagem são preenchidos automaticamente.",
                 },
                 {
                   step: "3",
-                  title: "Publique quando quiser",
-                  description: "Venda o conteúdo com URL própria e controle total.",
+                  title: "Congregação anota no app",
+                  description: "Cada ouvinte acompanha com os versículos já disponíveis e faz suas anotações livremente durante a pregação.",
                 },
                 {
                   step: "4",
-                  title: "Acompanhe resultados",
-                  description: "Veja quantas pessoas acessaram sua mensagem.",
+                  title: "Salve, exporte ou publique",
+                  description: "As anotações ficam no celular ou são exportadas em PDF. O pregador publica a mensagem na web quando quiser.",
                 },
               ].map((item) => (
                 <div
@@ -159,10 +171,25 @@ export default async function HomePage() {
                 </div>
               ))}
             </div>
+
+            {/* Descrição — direita no desktop, acima no mobile */}
+            <div className="space-y-4 order-1 lg:order-2">
+              <p className="inline-flex max-w-fit rounded-full bg-[var(--mt-gold)]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-[var(--mt-gold)]">
+                Como funciona
+              </p>
+              <h2 className="text-3xl font-semibold tracking-tight text-[var(--mt-text)] sm:text-4xl">
+                Um fluxo do pregador para a congregação
+              </h2>
+              <p className="max-w-xl text-sm leading-7 text-[var(--mt-muted)] sm:text-base">
+                O <strong className="text-[var(--mt-text)]">pregador cria na plataforma web</strong> e gera um ID.
+                A <strong className="text-[var(--mt-text)]">congregação usa o ID no app</strong> — versículos preenchidos automaticamente, espaço livre para anotar, tudo salvo no celular.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
+      {/* ── PLANOS ── */}
       <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -171,11 +198,11 @@ export default async function HomePage() {
               Escolha o plano ideal para seu ministério
             </h2>
             <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--mt-muted)]">
-              Tenha previsibilidade e recursos alinhados ao ritmo da sua criação de conteúdo.
+              Tenha previsibilidade e recursos alinhados ao ritmo da sua criação de conteúdo pastoral.
             </p>
           </div>
-          <Link href="/cadastro" className="btn btn-secondary btn-lg inline-flex">
-            Criar conta
+          <Link href="/cadastro" className="btn btn-secondary btn-lg inline-flex cursor-pointer">
+            Criar minha conta grátis
           </Link>
         </div>
 
@@ -185,7 +212,7 @@ export default async function HomePage() {
               title: "Plano Free",
               subtitle: "Comece sem pagar",
               description:
-                "Acesso a 10 pré-sermões por mês para você testar o fluxo completo.",
+                "Acesso a 10 pré-sermões por mês para você testar o fluxo completo de pregação.",
               highlight: "10 pré-sermões/mês",
               image: planoFreeImage,
             },
@@ -193,7 +220,7 @@ export default async function HomePage() {
               title: "Plano Básico",
               subtitle: "Mais espaço para crescer",
               description:
-                "Organize sua rotina e crie até 20 pré-sermões por mês.",
+                "Organize sua rotina pastoral e crie até 20 pré-sermões por mês.",
               highlight: "20 pré-sermões/mês",
               image: planoBasicoImage,
             },
@@ -201,7 +228,7 @@ export default async function HomePage() {
               title: "Plano Pro",
               subtitle: "Sem limites para criar",
               description:
-                "Pré-sermões ilimitados para líderes focados no preparo da mensagem.",
+                "Pré-sermões ilimitados para pastores e líderes focados no preparo da mensagem.",
               highlight: "Pré-sermões ilimitados",
               image: planoProImage,
               badge: "Recomendado",
@@ -210,7 +237,7 @@ export default async function HomePage() {
             <Link
               key={plan.title}
               href="/cadastro"
-              className="group overflow-hidden rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] p-6 transition hover:-translate-y-1"
+              className="group overflow-hidden rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] p-6 transition hover:-translate-y-1 cursor-pointer"
               style={{ boxShadow: 'var(--mt-shadow-lg)' }}
             >
               <div className="flex items-center justify-between gap-3">
@@ -234,8 +261,8 @@ export default async function HomePage() {
                 <span className="rounded-full border border-[var(--mt-border)] bg-[var(--mt-surface-muted)] px-3 py-1 text-xs font-semibold text-[var(--mt-text-secondary)]">
                   {plan.highlight}
                 </span>
-                <span className="text-sm font-semibold text-[var(--mt-text-secondary)] transition group-hover:text-[var(--mt-gold)]">
-                  Escolher
+                <span className="text-sm font-semibold text-[var(--mt-text-secondary)] underline-offset-2 transition group-hover:text-[var(--mt-gold)] group-hover:underline">
+                  Quero este plano
                 </span>
               </div>
             </Link>
@@ -243,6 +270,7 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ── COMUNIDADE ── */}
       <section className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
         <div
           className="rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] p-10"
@@ -254,31 +282,32 @@ export default async function HomePage() {
                 NOVIDADE
               </p>
               <h2 className="mt-4 text-3xl font-semibold tracking-tight text-[var(--mt-text)]">
-                Acompanhe as mensagens compartilhadas pela nossa comunidade
+                Descubra mensagens e pregações compartilhadas pela comunidade
               </h2>
               <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--mt-text-secondary)]">
-                Explore palavras e reflexões publicados por pessoas de todo o Brasil, organizados de forma clara para facilitar a leitura, o aprofundamento e o compartilhamento da Palavra.
+                Explore palavras e reflexões publicadas por pastores e líderes de todo o Brasil,
+                organizadas de forma clara para facilitar a leitura, o aprofundamento e o compartilhamento da Palavra.
               </p>
               <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                <Link href="/mensagens" className="btn btn-primary btn-lg inline-flex">
-                  Ver publicações
+                <Link href="/mensagens" className="btn btn-primary btn-lg inline-flex cursor-pointer">
+                  Quero explorar a Palavra
                 </Link>
                 <a
                   href="https://play.google.com/store/search?q=mensagem%20transformadora&c=apps"
                   target="_blank"
                   rel="noreferrer"
-                  className="btn btn-ghost btn-lg inline-flex"
+                  className="btn btn-ghost btn-lg inline-flex cursor-pointer"
                 >
-                  Baixar App
+                  Baixar meu app
                 </a>
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {[
                 {
-                  title: "Conteúdo editorial",
-                  description: "Cada mensagem ganha espaço de leitura com resumidos e contexto claro.",
+                  title: "Conteúdo pastoral",
+                  description: "Cada mensagem ganha espaço de leitura com resumo e contexto claro.",
                 },
                 {
                   title: "Blocos temáticos",
@@ -286,7 +315,7 @@ export default async function HomePage() {
                 },
                 {
                   title: "Design inspirador",
-                  description: "Cartões elegantes e modernos que valorizam o conteúdo do líder.",
+                  description: "Cartões elegantes que valorizam o conteúdo de cada pastor e líder.",
                 },
               ].map((item) => (
                 <div key={item.title} className="rounded-3xl border border-[var(--mt-border)] bg-[var(--mt-surface-muted)] p-6">
