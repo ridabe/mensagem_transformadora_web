@@ -290,6 +290,99 @@ export async function getBlogTags(): Promise<AdminBlogTagRow[]> {
   return (data ?? []) as AdminBlogTagRow[];
 }
 
+export type BlogMetrics = {
+  totalPosts: number;
+  publishedPosts: number;
+  draftPosts: number;
+  archivedPosts: number;
+  totalViews: number;
+  topPosts: Array<{
+    post_id: string;
+    views: number;
+    title: string;
+    slug: string;
+    status: string;
+    published_at: string | null;
+    cover_image_url: string | null;
+  }>;
+  categoriesWithCounts: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    count: number;
+  }>;
+};
+
+export async function getBlogMetrics(): Promise<BlogMetrics> {
+  const service = createServiceRoleClient();
+
+  const [
+    { data: posts },
+    { data: topViewsRaw },
+    { data: allViews },
+    { data: categories },
+    { data: postCategories },
+  ] = await Promise.all([
+    service.from("blog_posts").select("id,status"),
+    service
+      .from("blog_post_view_counts")
+      .select("post_id,views,blog_posts!inner(id,title,slug,status,published_at,cover_image_url)")
+      .order("views", { ascending: false })
+      .limit(10),
+    service.from("blog_post_view_counts").select("views"),
+    service.from("blog_categories").select("id,name,slug").order("name"),
+    service.from("blog_post_categories").select("category_id"),
+  ]);
+
+  const totalPosts = posts?.length ?? 0;
+  const publishedPosts = (posts ?? []).filter((p) => (p as { status: string }).status === "published").length;
+  const draftPosts = (posts ?? []).filter((p) => (p as { status: string }).status === "draft").length;
+  const archivedPosts = (posts ?? []).filter((p) => (p as { status: string }).status === "archived").length;
+  const totalViews = (allViews ?? []).reduce((sum, v) => sum + Number((v as { views: number }).views ?? 0), 0);
+
+  const categoryCounts = new Map<string, number>();
+  for (const pc of postCategories ?? []) {
+    const id = (pc as { category_id: string }).category_id;
+    categoryCounts.set(id, (categoryCounts.get(id) ?? 0) + 1);
+  }
+
+  const categoriesWithCounts = (categories ?? [])
+    .map((c) => {
+      const cat = c as { id: string; name: string; slug: string };
+      return { id: cat.id, name: cat.name, slug: cat.slug, count: categoryCounts.get(cat.id) ?? 0 };
+    })
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  type ViewRow = {
+    post_id: string;
+    views: number;
+    blog_posts: {
+      id: string;
+      title: string;
+      slug: string;
+      status: string;
+      published_at: string | null;
+      cover_image_url: string | null;
+    };
+  };
+
+  const topPosts = (topViewsRaw ?? []).map((row) => {
+    const r = row as unknown as ViewRow;
+    return {
+      post_id: r.post_id,
+      views: Number(r.views ?? 0),
+      title: r.blog_posts?.title ?? "",
+      slug: r.blog_posts?.slug ?? "",
+      status: r.blog_posts?.status ?? "",
+      published_at: r.blog_posts?.published_at ?? null,
+      cover_image_url: r.blog_posts?.cover_image_url ?? null,
+    };
+  });
+
+  return { totalPosts, publishedPosts, draftPosts, archivedPosts, totalViews, topPosts, categoriesWithCounts };
+}
+
 export async function getBlogPostCategorySlugs(postId: string): Promise<string[]> {
   const service = createServiceRoleClient();
   const { data, error } = await service

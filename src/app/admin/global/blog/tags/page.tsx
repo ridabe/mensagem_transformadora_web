@@ -7,6 +7,7 @@ import {
   getBlogTags,
   updateBlogTagAction,
 } from "@/app/admin/global/actions";
+import { BlogAdminNav } from "@/app/admin/global/blog/_components/BlogAdminNav";
 
 function getString(
   sp: Record<string, string | string[] | undefined> | undefined,
@@ -49,20 +50,14 @@ export default async function AdminGlobalBlogTagsPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-5">
         <div>
-          <h2 className="text-xl font-bold tracking-tight">Admin Global</h2>
-          <p className="text-sm text-[var(--mt-muted)]">Blog • Tags</p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Link
-            href="/admin/global/blog"
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-5 text-sm font-semibold text-[var(--mt-text)] hover:bg-[var(--mt-surface-elevated)]"
-          >
-            Voltar para posts
-          </Link>
+          <h2 className="text-xl font-bold tracking-tight">Blog</h2>
+          <p className="text-sm text-[var(--mt-muted)]">Tags</p>
         </div>
       </div>
+
+      <BlogAdminNav />
 
       {saved ? (
         <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-900/30 dark:bg-emerald-900/10 dark:text-emerald-200">

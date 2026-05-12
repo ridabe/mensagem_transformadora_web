@@ -3,6 +3,7 @@ import Link from "next/link";
 import { formatPtBrDate, truncateText } from "@/lib/format";
 import { requireAdmin } from "@/lib/auth/profiles";
 import { getAllBlogPosts } from "@/app/admin/global/actions";
+import { BlogAdminNav } from "@/app/admin/global/blog/_components/BlogAdminNav";
 
 function getString(
   sp: Record<string, string | string[] | undefined> | undefined,
@@ -69,8 +70,8 @@ export default async function AdminGlobalBlogPage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold tracking-tight">Admin Global</h2>
-          <p className="text-sm text-[var(--mt-muted)]">Blog • Gerenciar posts</p>
+          <h2 className="text-xl font-bold tracking-tight">Blog</h2>
+          <p className="text-sm text-[var(--mt-muted)]">Gerenciar posts</p>
         </div>
         <Link
           href="/admin/global/blog/novo"
@@ -79,6 +80,8 @@ export default async function AdminGlobalBlogPage({
           + Novo post
         </Link>
       </div>
+
+      <BlogAdminNav />
 
       {saved ? (
         <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-900/30 dark:bg-emerald-900/10 dark:text-emerald-200">
