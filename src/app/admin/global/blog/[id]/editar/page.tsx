@@ -13,6 +13,7 @@ import {
 } from "@/app/admin/global/actions";
 import { formatPtBrDate } from "@/lib/format";
 import { RichTextField } from "@/app/admin/global/blog/_components/RichTextField";
+import { TitleSlugFields } from "@/app/admin/global/blog/_components/TitleSlugFields";
 
 function getString(
   sp: Record<string, string | string[] | undefined> | undefined,
@@ -132,28 +133,7 @@ export default async function AdminGlobalBlogEditPage({
         >
           <input type="hidden" name="id" value={post.id} />
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-semibold">Título</label>
-              <input
-                name="title"
-                defaultValue={post.title}
-                className="h-11 rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm outline-none focus:ring-2 focus:ring-[var(--mt-amber)]"
-                required
-              />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-semibold">Slug</label>
-              <input
-                name="slug"
-                defaultValue={post.slug}
-                className="h-11 rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm outline-none focus:ring-2 focus:ring-[var(--mt-amber)]"
-                required
-              />
-              <p className="text-xs text-[var(--mt-muted)]">URL final: /blog/{post.slug}</p>
-            </div>
-          </div>
+          <TitleSlugFields defaultTitle={post.title} defaultSlug={post.slug} />
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-semibold">Autor</label>

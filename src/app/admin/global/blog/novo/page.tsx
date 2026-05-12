@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/profiles";
 import { createBlogPostAction } from "@/app/admin/global/actions";
 import { RichTextField } from "@/app/admin/global/blog/_components/RichTextField";
+import { TitleSlugFields } from "@/app/admin/global/blog/_components/TitleSlugFields";
 
 function getString(
   sp: Record<string, string | string[] | undefined> | undefined,
@@ -57,27 +58,7 @@ export default async function AdminGlobalBlogNewPage({
       ) : null}
 
       <form action={createBlogPostAction} className="flex flex-col gap-6 rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6">
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold">Título</label>
-            <input
-              name="title"
-              placeholder="Ex.: Como manter a fé em tempos difíceis"
-              className="h-11 rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm outline-none focus:ring-2 focus:ring-[var(--mt-amber)]"
-              required
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-semibold">Slug</label>
-            <input
-              name="slug"
-              placeholder="ex: como-manter-a-fe"
-              className="h-11 rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm outline-none focus:ring-2 focus:ring-[var(--mt-amber)]"
-            />
-            <p className="text-xs text-[var(--mt-muted)]">Se vazio, será gerado a partir do título.</p>
-          </div>
-        </div>
+        <TitleSlugFields />
 
         <div className="flex flex-col gap-2">
           <label className="text-sm font-semibold">Autor</label>

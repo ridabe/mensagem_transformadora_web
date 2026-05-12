@@ -42,6 +42,34 @@ export function RichTextField({
     setHtml(editorRef.current.innerHTML);
   }, []);
 
+  const onPaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const pastedHtml = e.clipboardData.getData("text/html");
+    if (pastedHtml) {
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = pastedHtml;
+      wrapper.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
+        const cleaned = (el.getAttribute("style") ?? "")
+          .split(";")
+          .filter((s) => !/^\s*(color|background(-color)?)\s*:/i.test(s))
+          .join(";")
+          .trim();
+        if (cleaned) {
+          el.setAttribute("style", cleaned);
+        } else {
+          el.removeAttribute("style");
+        }
+      });
+      wrapper.querySelectorAll("[color]").forEach((el) => el.removeAttribute("color"));
+      wrapper.querySelectorAll("font").forEach((el) => el.removeAttribute("color"));
+      document.execCommand("insertHTML", false, wrapper.innerHTML);
+    } else {
+      const text = e.clipboardData.getData("text/plain");
+      document.execCommand("insertText", false, text);
+    }
+    if (editorRef.current) setHtml(editorRef.current.innerHTML);
+  }, []);
+
   const onLink = useCallback(() => {
     const urlRaw = window.prompt("Link (https://...)", "");
     if (!urlRaw) return;
@@ -118,6 +146,7 @@ export function RichTextField({
           ref={editorRef}
           contentEditable
           onInput={onInput}
+          onPaste={onPaste}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           suppressContentEditableWarning
