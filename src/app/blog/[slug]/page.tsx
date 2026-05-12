@@ -13,6 +13,7 @@ import { ViewsCounter } from "./views-counter";
 type BlogPostRow = {
   id: string;
   author_id: string | null;
+  author_name: string | null;
   title: string;
   slug: string;
   excerpt: string | null;
@@ -145,7 +146,7 @@ async function fetchPublishedPostBySlug(slug: string): Promise<BlogPostRow | nul
   const { data, error } = await supabase
     .from("blog_posts")
     .select(
-      "id,author_id,title,slug,excerpt,content,cover_image_url,status,is_featured,seo_title,seo_description,published_at,created_at,updated_at",
+      "id,author_id,author_name,title,slug,excerpt,content,cover_image_url,status,is_featured,seo_title,seo_description,published_at,created_at,updated_at",
     )
     .eq("slug", s)
     .eq("status", "published")
@@ -215,6 +216,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   ]);
 
   const authorName =
+    post.author_name?.trim() ||
     authorRes.data?.display_name?.trim() ||
     authorRes.data?.name?.trim() ||
     "Mensagem Transformadora";

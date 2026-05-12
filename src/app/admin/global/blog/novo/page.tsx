@@ -79,6 +79,16 @@ export default async function AdminGlobalBlogNewPage({
           </div>
         </div>
 
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-semibold">Autor</label>
+          <input
+            name="author_name"
+            placeholder="Ex.: Ricardo Silva"
+            className="h-11 rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-4 text-sm outline-none focus:ring-2 focus:ring-[var(--mt-amber)]"
+          />
+          <p className="text-xs text-[var(--mt-muted)]">Nome que aparece publicamente no post.</p>
+        </div>
+
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="flex flex-col gap-2">
             <label className="text-sm font-semibold">Resumo</label>

@@ -45,6 +45,7 @@ export type BlogPostStatus = "draft" | "published" | "archived";
 export type AdminBlogPostRow = {
   id: string;
   author_id: string | null;
+  author_name: string | null;
   title: string;
   slug: string;
   excerpt: string | null;
@@ -254,7 +255,7 @@ export async function getAllBlogPosts(): Promise<AdminBlogPostRow[]> {
   const { data, error } = await service
     .from("blog_posts")
     .select(
-      "id,author_id,title,slug,excerpt,content,cover_image_url,status,is_featured,seo_title,seo_description,published_at,created_at,updated_at",
+      "id,author_id,author_name,title,slug,excerpt,content,cover_image_url,status,is_featured,seo_title,seo_description,published_at,created_at,updated_at",
     )
     .order("updated_at", { ascending: false });
 
@@ -267,7 +268,7 @@ export async function getBlogPostById(id: string): Promise<AdminBlogPostRow | nu
   const { data, error } = await service
     .from("blog_posts")
     .select(
-      "id,author_id,title,slug,excerpt,content,cover_image_url,status,is_featured,seo_title,seo_description,published_at,created_at,updated_at",
+      "id,author_id,author_name,title,slug,excerpt,content,cover_image_url,status,is_featured,seo_title,seo_description,published_at,created_at,updated_at",
     )
     .eq("id", id)
     .maybeSingle();
@@ -592,6 +593,7 @@ export async function createBlogPostAction(formData: FormData) {
   if (!title) redirect("/admin/global/blog/novo?error=title");
   if (!slug) redirect("/admin/global/blog/novo?error=slug");
 
+  const authorName = normalizeOptionalText(getString(formData.get("author_name")));
   const excerpt = normalizeOptionalText(getString(formData.get("excerpt")));
   const content = normalizeOptionalText(getString(formData.get("content")));
   const isFeatured = getString(formData.get("is_featured")) === "1";
@@ -610,6 +612,7 @@ export async function createBlogPostAction(formData: FormData) {
     .from("blog_posts")
     .insert({
       author_id: profile.authUserId,
+      author_name: authorName,
       title,
       slug,
       excerpt,
@@ -752,6 +755,7 @@ export async function updateBlogPostAction(formData: FormData) {
   if (!title) redirect(`/admin/global/blog/${encodeURIComponent(id)}/editar?error=title`);
   if (!slug) redirect(`/admin/global/blog/${encodeURIComponent(id)}/editar?error=slug`);
 
+  const authorName = normalizeOptionalText(getString(formData.get("author_name")));
   const excerpt = normalizeOptionalText(getString(formData.get("excerpt")));
   const content = normalizeOptionalText(getString(formData.get("content")));
   const isFeatured = getString(formData.get("is_featured")) === "1";
@@ -792,6 +796,7 @@ export async function updateBlogPostAction(formData: FormData) {
   }
 
   const updateData: Record<string, unknown> = {
+    author_name: authorName,
     title,
     slug,
     excerpt,
