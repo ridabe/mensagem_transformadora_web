@@ -74,6 +74,9 @@ export function MobileMenu({ isLoggedIn, areaHref, playStoreUrl, logoutSlot }: M
               <Link href="/sobre" onClick={close} className="rounded-xl px-4 py-3 text-sm font-medium text-[var(--mt-text)] transition-colors hover:bg-white/5">
                 Sobre
               </Link>
+              <Link href="/contato" onClick={close} className="rounded-xl px-4 py-3 text-sm font-medium text-[var(--mt-text)] transition-colors hover:bg-white/5">
+                Contato
+              </Link>
               <div className="mx-4 my-1 border-t border-[var(--mt-border)]" />
               <a
                 href={playStoreUrl}

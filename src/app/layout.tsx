@@ -17,11 +17,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Mensagem Transformadora",
+    default: "Mensagem Transformadora — Pregação para Pastores e Líderes",
     template: "%s — Mensagem Transformadora",
   },
   description:
-    "Publique, compartilhe e organize online mensagens cristãs criadas no app Mensagem Transformadora. Nada é publicado automaticamente.",
+    "Plataforma para pastores e líderes organizarem pregação, anotações e mensagens da Palavra de Deus. Escreva, revise e publique sua mensagem com total controle.",
+  keywords: ["pregação", "mensagem", "pastor", "líder", "anotação", "palavra", "sermão"],
   icons: {
     icon: [
       { url: "/favicon.ico", type: "image/x-icon" },

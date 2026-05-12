@@ -15,7 +15,9 @@ export function SiteFooter() {
           <Link href="/termos" className="hover:text-[var(--mt-text)] hover:underline">
             Termos de Uso
           </Link>
-          <span>Contato</span>
+          <Link href="/contato" className="hover:text-[var(--mt-text)] hover:underline">
+            Contato
+          </Link>
           <Link href="/desenvolvedor" className="hover:text-[var(--mt-text)] hover:underline">
             Desenvolvedor
           </Link>
