@@ -12,7 +12,7 @@ import type { PublishedSermon } from "@/features/sermons/sermon.types";
 import { CopyLinkButton } from "./copy-link-button";
 
 const PLAY_STORE_URL =
-  "https://play.google.com/store/search?q=mensagem%20transformadora&c=apps";
+  "https://play.google.com/store/apps/details?id=com.algoritmum.msgt";
 
 type SermonPageProps = {
   params: Promise<{ slug: string }>;
