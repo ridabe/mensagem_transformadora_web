@@ -150,9 +150,10 @@ export function RichTextField({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           suppressContentEditableWarning
+          style={{ color: "var(--mt-text)" }}
           className={[
             "w-full rounded-2xl border bg-[var(--mt-surface)] px-4 py-3 text-sm leading-7 outline-none",
-            "border-[var(--mt-border)] text-[var(--mt-text)]",
+            "border-[var(--mt-border)]",
             focused ? "ring-2 ring-[var(--mt-amber)]" : "",
             minHeight,
           ].join(" ")}
