@@ -54,6 +54,9 @@ export function MobileMenu({ isLoggedIn, areaHref, playStoreUrl, logoutSlot }: M
               <Link href="/mensagens" onClick={close} className="rounded-xl px-4 py-3 text-sm font-medium text-[var(--mt-text)] transition-colors hover:bg-white/5">
                 Mensagens
               </Link>
+              <Link href="/blog" onClick={close} className="rounded-xl px-4 py-3 text-sm font-medium text-[var(--mt-text)] transition-colors hover:bg-white/5">
+                Blog
+              </Link>
               {isLoggedIn ? (
                 <>
                   <Link href={areaHref} onClick={close} className="rounded-xl px-4 py-3 text-sm font-medium text-[var(--mt-text)] transition-colors hover:bg-white/5">
