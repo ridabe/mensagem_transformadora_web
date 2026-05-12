@@ -14,6 +14,9 @@ function buildSupabaseImageHostnames(): string[] {
 const nextConfig: NextConfig = {
   experimental: {
     externalDir: true,
+    serverActions: {
+      bodySizeLimit: "8mb",
+    },
   },
   images: {
     remotePatterns: buildSupabaseImageHostnames().map((hostname) => ({

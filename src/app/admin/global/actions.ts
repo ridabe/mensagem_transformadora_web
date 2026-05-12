@@ -771,20 +771,23 @@ export async function updateBlogPostAction(formData: FormData) {
 
   let coverUrl: string | null = null;
   if (coverFile instanceof File && coverFile.size > 0) {
-    const ext = coverFile.name.includes(".") ? coverFile.name.split(".").pop() : "";
-    const safeExt = typeof ext === "string" && ext.length <= 6 ? ext.toLowerCase() : "jpg";
-    const fileName = `${Date.now()}-${Math.random().toString(16).slice(2)}.${safeExt}`;
-    const path = `posts/${id}/${fileName}`;
+    try {
+      const ext = coverFile.name.includes(".") ? coverFile.name.split(".").pop() : "";
+      const safeExt = typeof ext === "string" && ext.length <= 6 ? ext.toLowerCase() : "jpg";
+      const fileName = `${Date.now()}-${Math.random().toString(16).slice(2)}.${safeExt}`;
+      const path = `posts/${id}/${fileName}`;
 
-    const bytes = new Uint8Array(await coverFile.arrayBuffer());
-    const { error: uploadError } = await service.storage.from("blog-covers").upload(path, bytes, {
-      contentType: coverFile.type || "application/octet-stream",
-      upsert: true,
-    });
+      const bytes = new Uint8Array(await coverFile.arrayBuffer());
+      const { error: uploadError } = await service.storage.from("blog-covers").upload(path, bytes, {
+        contentType: coverFile.type || "application/octet-stream",
+        upsert: true,
+      });
 
-    if (!uploadError) {
-      const { data } = service.storage.from("blog-covers").getPublicUrl(path);
-      coverUrl = data.publicUrl ? String(data.publicUrl) : null;
+      if (!uploadError) {
+        const { data } = service.storage.from("blog-covers").getPublicUrl(path);
+        coverUrl = data.publicUrl ? String(data.publicUrl) : null;
+      }
+    } catch {
     }
   }
 
