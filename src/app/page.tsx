@@ -5,6 +5,7 @@ import Image from "next/image";
 import planoFreeImage from "../../img/plano_free.png";
 import planoBasicoImage from "../../img/plano_basico.png";
 import planoProImage from "../../img/plano_pro.png";
+import arteBlogImage from "../../img/arte_blog.png";
 
 export const metadata: Metadata = {
   title: "Organize sua Pregação — Mensagem Transformadora para Pastores e Líderes",
@@ -267,6 +268,61 @@ export default async function HomePage() {
               </div>
             </Link>
           ))}
+        </div>
+      </section>
+
+      {/* ── BLOG ── */}
+      <section className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+        <div
+          className="rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface-elevated)] p-8"
+          style={{ boxShadow: "var(--mt-shadow-xl)" }}
+        >
+          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[var(--mt-gold)]">
+                BLOG
+              </p>
+              <h2 className="mt-4 text-2xl font-semibold tracking-tight text-[var(--mt-text)] sm:text-3xl">
+                Reflexões e conteúdos para fortalecer sua caminhada
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-[var(--mt-text-secondary)] sm:text-base">
+                Acesse artigos e mensagens com leitura agradável, posts em destaque, categorias e tags — um blog completo
+                para você aprofundar e compartilhar.
+              </p>
+              <div className="mt-6 flex flex-col gap-4 sm:flex-row">
+                <Link href="/blog" className="btn btn-primary btn-lg inline-flex cursor-pointer">
+                  Acessar o Blog
+                </Link>
+                <Link href="/mensagens" className="btn btn-ghost btn-lg inline-flex cursor-pointer">
+                  Ver mensagens públicas
+                </Link>
+              </div>
+            </div>
+
+            <Link
+              href="/blog"
+              className="group overflow-hidden rounded-[var(--mt-radius-2xl)] border border-[var(--mt-border)] bg-[var(--mt-surface-muted)] transition hover:-translate-y-1"
+              style={{ boxShadow: "var(--mt-shadow-lg)" }}
+            >
+              <Image
+                src={arteBlogImage}
+                alt="Acessar o Blog"
+                className="h-auto w-full"
+                sizes="(max-width: 1024px) 100vw, 480px"
+              />
+              <div className="flex items-center justify-between gap-4 border-t border-[var(--mt-border)] px-6 py-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[var(--mt-text)]">Blog Mensagem Transformadora</p>
+                  <p className="mt-1 text-sm text-[var(--mt-text-secondary)]">
+                    Clique na imagem para entrar
+                  </p>
+                </div>
+                <span className="text-sm font-semibold text-[var(--mt-text-secondary)] underline-offset-2 transition group-hover:text-[var(--mt-gold)] group-hover:underline">
+                  Abrir
+                </span>
+              </div>
+            </Link>
+          </div>
         </div>
       </section>
 
