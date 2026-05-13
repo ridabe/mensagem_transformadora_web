@@ -7,6 +7,7 @@ type RichTextFieldProps = {
   initialHtml?: string | null;
   placeholder?: string;
   minHeightClassName?: string;
+  maxHeightClassName?: string;
 };
 
 function isProbablyUrl(value: string): boolean {
@@ -28,12 +29,14 @@ export function RichTextField({
   initialHtml,
   placeholder,
   minHeightClassName,
+  maxHeightClassName,
 }: RichTextFieldProps) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const [html, setHtml] = useState<string>(String(initialHtml ?? ""));
   const [focused, setFocused] = useState(false);
 
   const minHeight = minHeightClassName ?? "min-h-[240px]";
+  const maxHeight = maxHeightClassName ?? "max-h-[480px]";
 
   const exec = useCallback((command: string, value?: string) => {
     if (!editorRef.current) return;
@@ -152,10 +155,11 @@ export function RichTextField({
           suppressContentEditableWarning
           style={{ color: "var(--mt-text)" }}
           className={[
-            "w-full rounded-2xl border bg-[var(--mt-surface)] px-4 py-3 text-sm leading-7 outline-none",
+            "w-full rounded-2xl border bg-[var(--mt-surface)] px-4 py-3 text-sm leading-7 outline-none overflow-y-auto",
             "border-[var(--mt-border)]",
             focused ? "ring-2 ring-[var(--mt-amber)]" : "",
             minHeight,
+            maxHeight,
           ].join(" ")}
         />
         {showPlaceholder ? (
