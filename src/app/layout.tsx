@@ -23,6 +23,9 @@ export const metadata: Metadata = {
   description:
     "Plataforma para pastores e líderes organizarem pregação, anotações e mensagens da Palavra de Deus. Escreva, revise e publique sua mensagem com total controle.",
   keywords: ["pregação", "mensagem", "pastor", "líder", "anotação", "palavra", "sermão"],
+  verification: {
+    google: "4cdSQFaT-UgZAzwCPyrTEszl1rTD5wZLlRTUDaQd4vA",
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", type: "image/x-icon" },
