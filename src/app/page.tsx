@@ -53,6 +53,12 @@ export default async function HomePage() {
                   Baixar meu app
                 </a>
               </div>
+              <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
+                <svg className="h-3.5 w-3.5 shrink-0 text-[var(--mt-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                Acesso gratuito · Sem cadastro obrigatório para explorar
+              </p>
               {/* Cartões de confiança — Gestalt: agrupados próximos às CTAs */}
               <div className="mt-8 grid gap-3 sm:grid-cols-2">
                 {[
@@ -202,9 +208,17 @@ export default async function HomePage() {
               Tenha previsibilidade e recursos alinhados ao ritmo da sua criação de conteúdo pastoral.
             </p>
           </div>
-          <Link href="/cadastro" className="btn btn-secondary btn-lg inline-flex cursor-pointer">
-            Criar minha conta grátis
-          </Link>
+          <div className="flex flex-col items-start gap-1.5 sm:items-end">
+            <Link href="/cadastro" className="btn btn-secondary btn-lg inline-flex cursor-pointer">
+              Criar minha conta grátis
+            </Link>
+            <p className="flex items-center gap-1.5 text-xs text-[var(--mt-muted)]">
+              <svg className="h-3.5 w-3.5 shrink-0 text-[var(--mt-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+              Sem cartão de crédito · Comece em segundos
+            </p>
+          </div>
         </div>
 
         <div className="mt-8 grid gap-5 lg:grid-cols-3">
@@ -266,6 +280,12 @@ export default async function HomePage() {
                   Quero este plano
                 </span>
               </div>
+              <p className="mt-3 flex items-center gap-1.5 text-xs text-[var(--mt-text-secondary)]">
+                <svg className="h-3 w-3 shrink-0 text-[var(--mt-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                Cadastro gratuito · Cancele quando quiser
+              </p>
             </Link>
           ))}
         </div>

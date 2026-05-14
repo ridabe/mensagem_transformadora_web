@@ -204,6 +204,12 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
 
             <div className="pt-2">
               <SubmitButton />
+              <p className="mt-2 flex items-center justify-center gap-1.5 text-xs text-[var(--mt-blue-light)]">
+                <svg className="h-3.5 w-3.5 shrink-0 text-[var(--mt-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                Grátis para sempre no plano básico · Sem cobranças surpresa
+              </p>
             </div>
           </div>
 

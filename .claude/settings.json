@@ -5,7 +5,9 @@
       "PowerShell(Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"c:\\\\Projetos\\\\mensagem_transformadora_web\"; npm run dev')",
       "Bash(npx tsc *)",
       "Bash(Get-ChildItem -Path \"c:\\\\Projetos\\\\mensagem_transformadora_web\")",
-      "Bash(Select-Object Name)"
+      "Bash(Select-Object Name)",
+      "Bash(Get-ChildItem -Recurse -Path src -Include *.tsx -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -First 30)"
     ]
   }
 }
