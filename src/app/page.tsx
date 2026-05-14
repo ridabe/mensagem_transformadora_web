@@ -6,6 +6,7 @@ import planoFreeImage from "../../img/plano_free.png";
 import planoBasicoImage from "../../img/plano_basico.png";
 import planoProImage from "../../img/plano_pro.png";
 import arteBlogImage from "../../img/arte_blog.png";
+import { buildSiteUrl } from "@/app/api/_shared/slug";
 
 export const metadata: Metadata = {
   title: "Organize sua Pregação — Mensagem Transformadora para Pastores e Líderes",
@@ -14,8 +15,46 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
+  const siteUrl = buildSiteUrl() ?? "https://mensagem-transformadora-web.vercel.app";
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: "Mensagem Transformadora",
+      description: "Plataforma para pastores e líderes organizarem pregação, anotações e mensagens da Palavra de Deus. Escreva, revise e publique sua mensagem com total controle.",
+      applicationCategory: "ReligiousApplication",
+      operatingSystem: "Android",
+      url: siteUrl,
+      downloadUrl: "https://play.google.com/store/search?q=mensagem%20transformadora&c=apps",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "BRL" },
+      publisher: { "@type": "Organization", name: "Mensagem Transformadora", url: siteUrl },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "Mensagem Transformadora",
+      url: siteUrl,
+      logo: `${siteUrl}/logo.svg`,
+      sameAs: ["https://play.google.com/store/search?q=mensagem%20transformadora&c=apps"],
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "Mensagem Transformadora",
+      url: siteUrl,
+      potentialAction: {
+        "@type": "SearchAction",
+        target: { "@type": "EntryPoint", urlTemplate: `${siteUrl}/blog?q={search_term_string}` },
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ];
   return (
     <main className="flex flex-1 flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       {/* ── HERO — âncora Z: topo-esquerdo H1 → topo-direito card ── */}
       <section className="relative overflow-hidden bg-[var(--mt-navy)] text-white">

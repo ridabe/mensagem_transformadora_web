@@ -298,8 +298,22 @@ export default async function BlogCategoriaPage({
     return qs ? `/blog/categoria/${encodeURIComponent(category.slug)}?${qs}` : `/blog/categoria/${encodeURIComponent(category.slug)}`;
   };
 
+  const siteUrl = buildSiteUrl() ?? "https://mensagem-transformadora-web.vercel.app";
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${siteUrl}/blog` },
+      { "@type": "ListItem", position: 3, name: category.name, item: `${siteUrl}/blog/categoria/${encodeURIComponent(category.slug)}` },
+    ],
+  };
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
         <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
           <Image src={bannerBlogImage} alt="Blog Mensagem Transformadora" className="h-auto w-full" priority />
