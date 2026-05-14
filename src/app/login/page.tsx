@@ -5,6 +5,7 @@ import { login } from "./actions";
 
 import { SubmitButton } from "@/app/admin/login/submit-button";
 import { canAccessChurchAdminArea, getCurrentProfile } from "@/lib/auth/profiles";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 type LoginPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -114,52 +115,61 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         ) : null}
 
         {/* Login form with modern card design */}
-        <form
-          action={login}
-          className="bg-[var(--mt-blue-medium)] rounded-3xl shadow-xl shadow-black/5 p-8 border border-[var(--mt-border)] animate-fade-in-up stagger-2"
-        >
-          <div className="space-y-6">
-            <div>
-              <label htmlFor="email" className="form-label">
-                E-mail
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="form-input w-full"
-                placeholder="seu@email.com"
-              />
-            </div>
+        <div className="bg-[var(--mt-blue-medium)] rounded-3xl shadow-xl shadow-black/5 p-8 border border-[var(--mt-border)] animate-fade-in-up stagger-2">
+          <form action={login}>
+            <div className="space-y-6">
+              <div>
+                <label htmlFor="email" className="form-label">
+                  E-mail
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  className="form-input w-full"
+                  placeholder="seu@email.com"
+                />
+              </div>
 
-            <div>
-              <label htmlFor="password" className="form-label">
-                Senha
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="form-input w-full"
-                placeholder="••••••••"
-              />
-              <div className="mt-3 text-right">
-                <Link
-                  href="/auth/forgot-password"
-                  className="text-sm font-semibold text-[var(--mt-gold)] hover:text-[var(--mt-white)] transition-colors duration-200"
-                >
-                  Esqueci minha senha
-                </Link>
+              <div>
+                <label htmlFor="password" className="form-label">
+                  Senha
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  className="form-input w-full"
+                  placeholder="••••••••"
+                />
+                <div className="mt-3 text-right">
+                  <Link
+                    href="/auth/forgot-password"
+                    className="text-sm font-semibold text-[var(--mt-gold)] hover:text-[var(--mt-white)] transition-colors duration-200"
+                  >
+                    Esqueci minha senha
+                  </Link>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <SubmitButton />
               </div>
             </div>
+          </form>
 
-            <div className="pt-2">
-              <SubmitButton />
-            </div>
+          <div className="mt-6 flex items-center gap-3">
+            <div className="flex-1 border-t border-[var(--mt-border)]" />
+            <span className="text-xs text-[var(--mt-blue-light)]">ou</span>
+            <div className="flex-1 border-t border-[var(--mt-border)]" />
+          </div>
+
+          <div className="mt-4">
+            <GoogleSignInButton />
           </div>
 
           <div className="mt-8 pt-6 border-t border-[var(--mt-border)]">
@@ -173,7 +183,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               </Link>
             </p>
           </div>
-        </form>
+        </div>
 
         {/* Footer link */}
         <div className="text-center mt-8 animate-fade-in-up stagger-3">

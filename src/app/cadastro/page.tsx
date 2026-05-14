@@ -3,6 +3,7 @@ import Link from "next/link";
 import { signup } from "./actions";
 
 import { SubmitButton } from "./submit-button";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 type SignupPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -86,10 +87,8 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
         ) : null}
 
         {/* Signup form with modern card design */}
-        <form
-          action={signup}
-          className="bg-[var(--mt-blue-medium)] rounded-3xl shadow-xl shadow-black/5 p-8 border border-[var(--mt-border)] animate-fade-in-up stagger-2"
-        >
+        <div className="bg-[var(--mt-blue-medium)] rounded-3xl shadow-xl shadow-black/5 p-8 border border-[var(--mt-border)] animate-fade-in-up stagger-2">
+        <form action={signup}>
           <div className="grid gap-6">
             <div>
               <label htmlFor="ministry_title" className="form-label">
@@ -225,6 +224,20 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
               </p>
             </div>
           </div>
+        </form>
+
+          <div className="mt-6 flex items-center gap-3">
+            <div className="flex-1 border-t border-[var(--mt-border)]" />
+            <span className="text-xs text-[var(--mt-blue-light)]">ou</span>
+            <div className="flex-1 border-t border-[var(--mt-border)]" />
+          </div>
+
+          <div className="mt-4">
+            <GoogleSignInButton />
+            <p className="mt-2 text-center text-xs text-[var(--mt-blue-light)]/60">
+              Ao entrar com Google, sua função ministerial poderá ser completada depois.
+            </p>
+          </div>
 
           <div className="mt-8 pt-6 border-t border-[var(--mt-border)]">
             <p className="text-center text-sm text-[var(--mt-blue-light)]">
@@ -237,7 +250,7 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
               </Link>
             </p>
           </div>
-        </form>
+        </div>
 
         {/* Benefits section */}
         <div className="mt-8 grid gap-4 sm:grid-cols-3 animate-fade-in-up stagger-3">

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { logout } from "@/app/login/actions";
 import { requireLeader } from "@/lib/auth/profiles";
 import { formatLeaderDisplayName } from "@/lib/format";
+import { CompleteProfileBanner } from "./complete-profile-banner";
 
 export default async function LiderLayout({ children }: { children: ReactNode }) {
   const profile = await requireLeader();
@@ -54,6 +55,8 @@ export default async function LiderLayout({ children }: { children: ReactNode })
           </form>
         </div>
       </header>
+
+      {!profile.ministryTitle ? <CompleteProfileBanner /> : null}
 
       {children}
     </div>
