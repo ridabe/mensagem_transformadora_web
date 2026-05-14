@@ -210,6 +210,19 @@ export default async function CadastroPage({ searchParams }: SignupPageProps) {
                 </svg>
                 Grátis para sempre no plano básico · Sem cobranças surpresa
               </p>
+              <p className="mt-3 text-center text-xs text-[var(--mt-blue-light)]/70 leading-5">
+                Seus dados são tratados em conformidade com a{" "}
+                <abbr title="Lei Geral de Proteção de Dados — Lei nº 13.709/2018">LGPD</abbr>
+                . Coletamos apenas as informações necessárias para criar e manter sua conta.
+                Consulte nossa{" "}
+                <Link
+                  href="/privacidade"
+                  className="underline underline-offset-2 hover:text-[var(--mt-white)] transition-colors duration-200"
+                >
+                  Política de Privacidade
+                </Link>
+                .
+              </p>
             </div>
           </div>
 
