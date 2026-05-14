@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 const sections = [
   { label: "Igrejas", href: "/admin/global/igrejas" },
   { label: "Blog", href: "/admin/global/blog" },
+  { label: "Sermão IA", href: "/admin/global/sermao-ia" },
+  { label: "Configurações", href: "/admin/global/configuracoes" },
 ];
 
 export function AdminGlobalNav() {

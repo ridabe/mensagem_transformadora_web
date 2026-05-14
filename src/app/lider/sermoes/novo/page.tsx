@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { canCreatePreSermon, requireLeader } from "@/lib/auth/profiles";
-import { createClient } from "@/lib/supabase/server";
-import { VerseFieldMain, VerseFieldSecondary } from "@/components/bible";
+import { canCreatePreSermon, getCurrentSubscription, requireLeader } from "@/lib/auth/profiles";
+import { isAiGenerationEnabledForFree } from "@/lib/app-settings";
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
+import { SermonForm } from "./_components/SermonForm";
 
 type PreSermonStatus = "draft" | "active";
 
@@ -23,14 +23,6 @@ function toShareCode(value: unknown): string {
 
 function parseStatus(value: string): PreSermonStatus {
   return value === "draft" ? "draft" : "active";
-}
-
-function parseSecondaryVerses(value: string): string[] | null {
-  const lines = value
-    .split(/\r?\n/g)
-    .map((l) => l.trim())
-    .filter(Boolean);
-  return lines.length ? lines : null;
 }
 
 function extractMissingEnvFromError(err: unknown): string | null {
@@ -183,7 +175,30 @@ export default async function LiderNovoSermoesPage({ searchParams }: LiderNovoSe
     );
   }
 
-  await requireLeader();
+  const profile = await requireLeader();
+
+  const service = createServiceRoleClient();
+  const [subscription, aiFreeEnabled, profileOverride] = await Promise.all([
+    getCurrentSubscription(profile.authUserId),
+    isAiGenerationEnabledForFree(),
+    service
+      .from("profiles")
+      .select("ai_sermon_enabled")
+      .eq("id", profile.id)
+      .maybeSingle<{ ai_sermon_enabled: boolean | null }>()
+      .then((r) => r.data?.ai_sermon_enabled ?? null),
+  ]);
+
+  const isPaidActive =
+    subscription.plan !== "free" &&
+    (subscription.status === "active" || subscription.status === "trialing");
+
+  const aiDisabledForFree =
+    profileOverride === true
+      ? false
+      : profileOverride === false
+        ? true
+        : !isPaidActive && !aiFreeEnabled;
 
   const errorMessage =
     error === "title"
@@ -193,9 +208,9 @@ export default async function LiderNovoSermoesPage({ searchParams }: LiderNovoSe
         : error === "limit"
           ? limitReason ??
             "Seu plano atingiu o limite de pré-sermões neste ciclo. Seu ciclo será renovado automaticamente na próxima data de renovação ou você pode fazer upgrade agora."
-        : error === "create"
-          ? createReason ?? "Não foi possível criar a mensagem."
-          : null;
+          : error === "create"
+            ? createReason ?? "Não foi possível criar a mensagem."
+            : null;
 
   return (
     <main className="flex flex-col gap-6">
@@ -211,78 +226,11 @@ export default async function LiderNovoSermoesPage({ searchParams }: LiderNovoSe
         </p>
       </header>
 
-      {errorMessage ? (
-        <div className="rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-4 text-sm text-[var(--mt-text)]">
-          {errorMessage}
-        </div>
-      ) : null}
-
-      <form
+      <SermonForm
         action={createPreSermonAction}
-        className="flex flex-col gap-4 rounded-2xl border border-[var(--mt-border)] bg-[var(--mt-surface)] p-6"
-      >
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">Título</span>
-          <input
-            name="title"
-            required
-            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 outline-none ring-[var(--mt-navy)] focus:ring-2"
-            placeholder="Ex: Série sobre fé — Parte 1"
-          />
-        </label>
-
-        <VerseFieldMain name="main_verse" required />
-
-        <VerseFieldSecondary name="secondary_verses" />
-
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">Notas (opcional)</span>
-          <textarea
-            name="notes"
-            rows={6}
-            className="rounded-xl border border-[var(--mt-border)] bg-transparent px-4 py-3 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2"
-            placeholder="Rascunho, ideias, estrutura…"
-          />
-        </label>
-
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">Mensagem completa (opcional)</span>
-          <textarea
-            name="full_sermon"
-            rows={10}
-            className="rounded-xl border border-[var(--mt-border)] bg-transparent px-4 py-3 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2"
-            placeholder="Digite aqui a mensagem completa para publicar no site (opcional)."
-          />
-        </label>
-
-        <label className="flex flex-col gap-2 text-sm">
-          <span className="font-semibold">Status</span>
-          <select
-            name="status"
-            defaultValue="active"
-            className="h-11 rounded-xl border border-[var(--mt-border)] bg-transparent px-4 text-sm outline-none ring-[var(--mt-navy)] focus:ring-2"
-          >
-            <option value="draft">Rascunho</option>
-            <option value="active">Ativo</option>
-          </select>
-        </label>
-
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <button
-            type="submit"
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--mt-navy)] px-5 text-sm font-semibold text-white hover:opacity-95"
-          >
-            Salvar
-          </button>
-          <Link
-            href="/lider/sermoes"
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-[var(--mt-border)] bg-[var(--mt-surface)] px-5 text-sm font-semibold text-[var(--mt-text)] hover:bg-black/5 dark:hover:bg-white/5"
-          >
-            Cancelar
-          </Link>
-        </div>
-      </form>
+        aiDisabledForFree={aiDisabledForFree}
+        errorMessage={errorMessage}
+      />
     </main>
   );
 }
-

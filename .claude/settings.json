@@ -7,7 +7,16 @@
       "Bash(Get-ChildItem -Path \"c:\\\\Projetos\\\\mensagem_transformadora_web\")",
       "Bash(Select-Object Name)",
       "Bash(Get-ChildItem -Recurse -Path src -Include *.tsx -ErrorAction SilentlyContinue)",
-      "Bash(Select-Object -First 30)"
+      "Bash(Select-Object -First 30)",
+      "Bash(Get-ChildItem -Force)",
+      "Bash(New-Item -ItemType Directory -Force \"c:\\\\Projetos\\\\mensagem_transformadora_web\\\\src\\\\app\\\\api\\\\me\\\\sermons\\\\generate\")",
+      "Bash(Out-Null)",
+      "Bash(Get-NetTCPConnection -LocalPort 3000,3001 -State Listen)",
+      "Bash(Select-Object LocalPort, OwningProcess)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000,3001 -State Listen)",
+      "PowerShell(netstat -ano)",
+      "PowerShell(Stop-Process -Id 28612 -Force)",
+      "Bash(npx supabase *)"
     ]
   }
 }

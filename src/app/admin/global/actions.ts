@@ -40,6 +40,32 @@ export type ProfileRowWithChurch = {
   created_at: string;
 };
 
+export type ProfileRowForAi = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  ai_sermon_enabled: boolean | null;
+};
+
+export async function getAllProfilesForAiManagement(search?: string): Promise<ProfileRowForAi[]> {
+  const service = createServiceRoleClient();
+  let query = service
+    .from("profiles")
+    .select("id,name,email,role,ai_sermon_enabled")
+    .order("name", { ascending: true })
+    .limit(300);
+
+  if (search?.trim()) {
+    const s = search.trim();
+    query = query.or(`name.ilike.%${s}%,email.ilike.%${s}%`);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Failed to fetch profiles: ${error.message}`);
+  return (data ?? []) as ProfileRowForAi[];
+}
+
 export type BlogPostStatus = "draft" | "published" | "archived";
 
 export type AdminBlogPostRow = {
