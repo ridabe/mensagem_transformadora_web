@@ -20,7 +20,8 @@
       "Bash(findstr \"vercel\")",
       "Bash(npm i *)",
       "PowerShell(Get-ChildItem -Path \"c:\\\\Projetos\\\\mensagem_transformadora_web\\\\public\" | ForEach-Object { $_.Name })",
-      "PowerShell(New-Item -ItemType Directory -Path \"c:\\\\Projetos\\\\mensagem_transformadora_web\\\\public\\\\.well-known\" -Force)"
+      "PowerShell(New-Item -ItemType Directory -Path \"c:\\\\Projetos\\\\mensagem_transformadora_web\\\\public\\\\.well-known\" -Force)",
+      "PowerShell(New-Item -ItemType Directory -Path \"c:\\\\Projetos\\\\mensagem_transformadora_web\\\\src\\\\app\\\\api\\\\assetlinks\" -Force)"
     ],
     "additionalDirectories": [
       "c:\\Projetos\\mensagem_transformadora_web\\qrcode"

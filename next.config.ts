@@ -12,11 +12,11 @@ function buildSupabaseImageHostnames(): string[] {
 }
 
 const nextConfig: NextConfig = {
-  async headers() {
+  async rewrites() {
     return [
       {
         source: "/.well-known/assetlinks.json",
-        headers: [{ key: "Content-Type", value: "application/json" }],
+        destination: "/api/assetlinks",
       },
     ];
   },
