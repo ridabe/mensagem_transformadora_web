@@ -11,6 +11,7 @@ const assetLinks = [
       package_name: "com.algoritmum.msgt",
       sha256_cert_fingerprints: [
         "BC:0F:A4:5C:C5:6B:8B:D6:73:E0:28:12:2E:2A:3F:68:52:99:32:A6:05:AF:62:30:1B:C9:CF:24:DD:73",
+        "BC:0F:A4:5C:C5:6B:8B:D6:73:E0:28:12:2E:2A:3F:68:52:99:32:A6:05:AF:62:30:1B:C9:CF:24:DD:73:F3:D5",
       ],
     },
   },
