@@ -18,7 +18,12 @@
       "PowerShell(Stop-Process -Id 28612 -Force)",
       "Bash(npx supabase *)",
       "Bash(findstr \"vercel\")",
-      "Bash(npm i *)"
+      "Bash(npm i *)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Projetos\\\\mensagem_transformadora_web\\\\public\" | ForEach-Object { $_.Name })",
+      "PowerShell(New-Item -ItemType Directory -Path \"c:\\\\Projetos\\\\mensagem_transformadora_web\\\\public\\\\.well-known\" -Force)"
+    ],
+    "additionalDirectories": [
+      "c:\\Projetos\\mensagem_transformadora_web\\qrcode"
     ]
   }
 }

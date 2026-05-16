@@ -98,6 +98,31 @@ export default async function HomePage() {
                 </svg>
                 Acesso gratuito · Sem cadastro obrigatório para explorar
               </p>
+
+              {/* QR Code — oculto em mobile (usuário já está no celular) */}
+              <a
+                href="https://play.google.com/store/search?q=mensagem%20transformadora&c=apps"
+                target="_blank"
+                rel="noreferrer"
+                className="mt-6 hidden sm:inline-flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur transition hover:bg-white/10"
+              >
+                <Image
+                  src="/qrcode/tr-ee-mCc2le-qrcode-white.png"
+                  alt="QR Code para baixar o app Mensagem Transformadora na Google Play"
+                  width={80}
+                  height={80}
+                  className="rounded-lg"
+                />
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-white">Baixe o app gratuitamente</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-400">
+                    Aponte a câmera do celular para<br />baixar direto da Google Play
+                  </p>
+                  <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-[var(--mt-gold)]">
+                    Google Play
+                  </p>
+                </div>
+              </a>
               {/* Cartões de confiança — Gestalt: agrupados próximos às CTAs */}
               <div className="mt-8 grid gap-3 sm:grid-cols-2">
                 {[
