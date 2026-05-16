@@ -16,7 +16,9 @@
       "PowerShell(Get-NetTCPConnection -LocalPort 3000,3001 -State Listen)",
       "PowerShell(netstat -ano)",
       "PowerShell(Stop-Process -Id 28612 -Force)",
-      "Bash(npx supabase *)"
+      "Bash(npx supabase *)",
+      "Bash(findstr \"vercel\")",
+      "Bash(npm i *)"
     ]
   }
 }
