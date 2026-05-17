@@ -1,4 +1,5 @@
 import { publicErrorResponse, json } from "@/app/api/_shared/responses";
+import { buildSiteUrl } from "@/app/api/_shared/slug";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import {
   createAbacatePayCustomer,
@@ -189,8 +190,9 @@ export async function POST(request: Request) {
     }
   }
 
-  const returnUrl = "https://mensagem-transformadora-web.vercel.app/dashboard";
-  const completionUrl = "https://mensagem-transformadora-web.vercel.app/dashboard?payment=success";
+  const siteUrl = buildSiteUrl() ?? "https://mensagemtransformadora.com.br";
+  const returnUrl = `${siteUrl}/dashboard`;
+  const completionUrl = `${siteUrl}/dashboard?payment=success`;
 
   const checkoutExternalId = `${profileRow.id}:${planRow.code}:${Date.now()}`;
 
@@ -212,18 +214,31 @@ export async function POST(request: Request) {
       },
     });
   } catch (err) {
-    const details =
-      err && typeof err === "object" && "name" in err && err.name === "AbacatePayHttpError"
-        ? err
+    const isAbacateError =
+      err && typeof err === "object" && "name" in err && err.name === "AbacatePayHttpError";
+    const providerMessage =
+      isAbacateError && err && typeof err === "object" && "providerMessage" in err
+        ? (err.providerMessage as string | null)
+        : null;
+    const providerStatus =
+      isAbacateError && err && typeof err === "object" && "status" in err
+        ? (err.status as number)
         : null;
     console.error("[subscriptions/create-checkout] erro ao criar checkout", {
       message: err && typeof err === "object" && "message" in err ? err.message : String(err),
-      status: details && "status" in details ? (details.status as number) : null,
-      providerMessage: details && "providerMessage" in details ? (details.providerMessage as string | null) : null,
+      status: providerStatus,
+      providerMessage,
     });
-    return publicErrorResponse(
+    return json(
+      {
+        success: false,
+        error: {
+          message: "Não foi possível iniciar sua assinatura agora. Tente novamente.",
+          providerMessage: providerMessage ?? undefined,
+          providerStatus: providerStatus ?? undefined,
+        },
+      },
       502,
-      "Não foi possível iniciar sua assinatura agora. Tente novamente.",
     );
   }
 
