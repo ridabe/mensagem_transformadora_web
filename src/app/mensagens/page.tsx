@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getPublicSermons } from "@/features/sermons/sermon.repository";
 import { formatPtBrDate, truncateText } from "@/lib/format";
 
+export const revalidate = 60;
+
 export const metadata = {
   title: "Blog de mensagens publicadas",
 };

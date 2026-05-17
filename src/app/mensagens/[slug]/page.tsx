@@ -1,3 +1,5 @@
+import { cache } from "react";
+import { after } from "next/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
@@ -6,6 +8,7 @@ import { buildSiteUrl } from "@/app/api/_shared/slug";
 import { getDbPool } from "@/lib/db";
 import { formatPtBrDate } from "@/lib/format";
 import {
+  getPublicSermonBySlug,
   incrementPublicSermonView,
 } from "@/features/sermons/sermon.repository";
 import type { PublishedSermon } from "@/features/sermons/sermon.types";
@@ -17,6 +20,8 @@ const PLAY_STORE_URL =
 type SermonPageProps = {
   params: Promise<{ slug: string }>;
 };
+
+const getSermon = cache(getPublicSermonBySlug);
 
 function buildDescription(sermon: PublishedSermon): string {
   return `Mensagem ministrada por ${sermon.preacherName} na ${sermon.churchName}, baseada em ${sermon.mainVerse}.`;
@@ -34,22 +39,9 @@ async function getRuntimeBaseUrl(): Promise<string> {
   return "http://localhost:3000";
 }
 
-async function fetchPublicSermonBySlug(
-  slug: string,
-): Promise<PublishedSermon | null> {
-  const base = await getRuntimeBaseUrl();
-  const url = new URL(`/api/public/sermons/${encodeURIComponent(slug)}`, base);
-
-  const res = await fetch(url, { cache: "no-store" });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error("Falha ao buscar mensagem pública.");
-
-  return (await res.json()) as PublishedSermon;
-}
-
 export async function generateMetadata({ params }: SermonPageProps) {
   const { slug } = await params;
-  const sermon = await fetchPublicSermonBySlug(slug);
+  const sermon = await getSermon(slug);
   if (!sermon) return {};
 
   const title = sermon.sermonTitle;
@@ -84,31 +76,31 @@ export async function generateMetadata({ params }: SermonPageProps) {
 export default async function PublicSermonPage({ params }: SermonPageProps) {
   const { slug } = await params;
 
-  const sermon = await fetchPublicSermonBySlug(slug);
+  const [sermon, h] = await Promise.all([getSermon(slug), headers()]);
   if (!sermon) notFound();
 
-  const h = await headers();
   const viewerIp = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
   const userAgent = h.get("user-agent");
   const referrer = h.get("referer");
 
+  after(async () => {
+    try {
+      const pool = getDbPool();
+      const client = await pool.connect();
+      try {
+        await incrementPublicSermonView(client, sermon.id, {
+          viewerIp,
+          userAgent,
+          referrer,
+        });
+      } finally {
+        client.release();
+      }
+    } catch {}
+  });
+
   const siteUrl = buildSiteUrl() ?? (await getRuntimeBaseUrl());
   const shareUrl = `${siteUrl.replace(/\/+$/, "")}/mensagens/${sermon.slug}`;
-
-  try {
-    const pool = getDbPool();
-    const client = await pool.connect();
-    try {
-      await incrementPublicSermonView(client, sermon.id, {
-        viewerIp,
-        userAgent,
-        referrer,
-      });
-    } finally {
-      client.release();
-    }
-  } catch {
-  }
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-10 lg:px-0">
